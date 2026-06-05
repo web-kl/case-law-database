@@ -1,0 +1,28 @@
+# Umgebungsvariablen / Secrets
+.env
+*.env
+
+# Generierte Ausgaben
+output/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# Playwright Browser-Binaries
+playwright-browsers/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# Windows
+Thumbs.db
+Desktop.ini

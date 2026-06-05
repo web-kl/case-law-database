@@ -1,0 +1,731 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rechtsprechungs-Agent</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242736;
+    --border: #2e3247;
+    --accent: #4f7ef7;
+    --accent-dim: #2d4aa0;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --radius: 10px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  header h1 { font-size: 1.2rem; font-weight: 600; letter-spacing: -.3px; }
+  header .badge {
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: .5px;
+  }
+
+  main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  /* ── Prompt-Box ── */
+  .prompt-wrap { position: relative; margin-bottom: 16px; }
+  #promptInput {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 15px;
+    padding: 16px 120px 16px 18px;
+    resize: vertical;
+    min-height: 90px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  #promptInput:focus { border-color: var(--accent); }
+  #promptInput::placeholder { color: var(--muted); }
+
+  #btnParse {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 9px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  #btnParse:disabled { opacity: .45; cursor: default; }
+
+  /* ── Param-Card ── */
+  #paramCard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  #paramCard h2 { font-size: .85rem; color: var(--muted); text-transform: uppercase;
+    letter-spacing: .8px; margin-bottom: 16px; }
+
+  .param-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+  @media (max-width: 600px) { .param-grid { grid-template-columns: 1fr; } }
+
+  .param-field label { display: block; font-size: 12px; color: var(--muted);
+    margin-bottom: 5px; font-weight: 500; }
+  .param-field input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text);
+    font-size: 14px;
+    padding: 8px 12px;
+    outline: none;
+  }
+  .param-field input:focus { border-color: var(--accent); }
+
+  /* Portal-Checkboxen */
+  .portale-label { font-size: 12px; color: var(--muted); font-weight: 500;
+    margin-bottom: 8px; display: block; }
+  .portale-grid {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;
+  }
+  .portal-cb { display: none; }
+  .portal-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 13px;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s, border-color .15s;
+  }
+  .portal-cb:checked + .portal-pill {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .action-row { display: flex; gap: 10px; align-items: center; }
+  #btnSearch {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 10px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  #btnSearch:disabled { opacity: .4; cursor: default; }
+  #btnReset {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 10px 18px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  #btnReset:hover { color: var(--text); border-color: var(--text); }
+
+  /* ── Fortschritt ── */
+  #progressSection { margin-bottom: 28px; display: none; }
+  #progressSection h2 { font-size: .85rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px; }
+  #portalList { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .portal-status {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 12px; font-size: 13px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.running { background: var(--yellow); animation: pulse 1s infinite; }
+  .dot.ok { background: var(--green); }
+  .dot.error { background: var(--red); }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  #summaryStatus {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--muted);
+    display: none;
+  }
+  #summaryStatus.active { display: flex; align-items: center; gap: 8px; }
+
+  /* ── Ergebnisse ── */
+  #resultsSection { display: none; }
+  #resultsSection h2 { font-size: .85rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .8px; margin-bottom: 16px; }
+
+  .treffer-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    transition: border-color .15s;
+  }
+  .treffer-card:hover { border-color: var(--accent); }
+
+  .treffer-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 12px; margin-bottom: 8px;
+  }
+  .treffer-title { font-weight: 600; font-size: 14px; flex: 1; }
+  .treffer-title a { color: var(--accent); text-decoration: none; }
+  .treffer-title a:hover { text-decoration: underline; }
+  .treffer-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+    padding: 2px 8px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .chip.portal { color: var(--accent); border-color: var(--accent-dim); }
+  .treffer-vorschau { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  /* ── Zusammenfassung ── */
+  #summaryBox {
+    background: var(--surface);
+    border: 1px solid var(--accent-dim);
+    border-radius: var(--radius);
+    padding: 24px 26px;
+    margin-bottom: 28px;
+    display: none;
+  }
+  #summaryBox h2 { font-size: .85rem; color: var(--accent);
+    text-transform: uppercase; letter-spacing: .8px; margin-bottom: 16px; }
+  #summaryContent { line-height: 1.8; }
+  #summaryContent h1,#summaryContent h2,#summaryContent h3 {
+    color: var(--text); margin: 16px 0 8px; font-size: 1rem; }
+  #summaryContent h1 { font-size: 1.1rem; }
+  #summaryContent ul,#summaryContent ol { padding-left: 20px; margin: 8px 0; }
+  #summaryContent li { margin-bottom: 4px; }
+  #summaryContent strong { color: var(--text); }
+  #summaryContent a { color: var(--accent); }
+  #summaryContent code {
+    background: var(--surface2); padding: 1px 5px;
+    border-radius: 4px; font-size: 13px;
+  }
+  #summaryContent hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  /* ── Fehler ── */
+  #fehlerBox { margin-bottom: 20px; display: none; }
+  .fehler-item {
+    background: #1f1212;
+    border: 1px solid var(--red);
+    border-radius: 7px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #fca5a5;
+    margin-bottom: 6px;
+  }
+
+  /* Spinner */
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 20px; font-size: 13px;
+    opacity: 0; pointer-events: none; transition: opacity .3s;
+    max-width: 340px;
+  }
+  #toast.show { opacity: 1; }
+
+  /* PDF-Export-Button */
+  #btnExport {
+    display: none;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 9px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 20px;
+  }
+  #btnExport:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Print-Styles ── */
+  @media print {
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    body { background: #fff; color: #111; font-family: Georgia, serif; font-size: 11pt; }
+
+    header, #promptInput, .prompt-wrap, #paramCard, #progressSection,
+    #fehlerBox, #btnExport, #toast, #btnReset, #btnSearch, #btnParse { display: none !important; }
+
+    main { max-width: 100%; padding: 0; }
+
+    #print-header { display: block !important; margin-bottom: 24pt; border-bottom: 2pt solid #333; padding-bottom: 10pt; }
+    #print-header h1 { font-size: 18pt; margin-bottom: 6pt; }
+    #print-header .print-meta { font-size: 10pt; color: #555; }
+
+    #summaryBox {
+      display: block !important;
+      background: #f9f9f9;
+      border: 1pt solid #ccc;
+      border-radius: 0;
+      padding: 16pt;
+      margin-bottom: 20pt;
+    }
+    #summaryBox h2 { font-size: 13pt; color: #333; margin-bottom: 10pt; }
+    #summaryContent { font-size: 11pt; line-height: 1.7; }
+    #summaryContent h1 { font-size: 14pt; margin: 12pt 0 6pt; }
+    #summaryContent h2 { font-size: 12pt; margin: 10pt 0 5pt; }
+    #summaryContent h3 { font-size: 11pt; margin: 8pt 0 4pt; }
+    #summaryContent a { color: #1a56db; }
+    #summaryContent a::after { content: ""; }
+
+    #resultsSection { display: block !important; }
+    #resultsHeading { font-size: 13pt; margin-bottom: 12pt; border-bottom: 1pt solid #ccc; padding-bottom: 6pt; }
+
+    .treffer-card {
+      background: #fff;
+      border: 1pt solid #ddd;
+      border-radius: 0;
+      padding: 10pt 12pt;
+      margin-bottom: 10pt;
+      page-break-inside: avoid;
+    }
+    .treffer-card:hover { border-color: #ddd; }
+    .treffer-title { font-size: 11pt; font-weight: bold; }
+    .treffer-title a { color: #1a56db; text-decoration: none; }
+    .treffer-title a::after { content: " (" attr(href) ")"; font-size: 8pt; color: #555; font-weight: normal; word-break: break-all; }
+    .chip { background: #eee; border: none; color: #333; font-size: 9pt; }
+    .chip.portal { background: #dce8ff; color: #1a56db; }
+    .treffer-vorschau { font-size: 10pt; color: #444; margin-top: 5pt; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Rechtsprechungs-Agent</h1>
+  <span class="badge">KI-gestützt</span>
+</header>
+
+<main>
+
+  <!-- Nur im Druck sichtbar -->
+  <div id="print-header" style="display:none">
+    <h1>Rechtsprechungs-Agent — Suchergebnis</h1>
+    <div class="print-meta" id="print-meta"></div>
+  </div>
+
+  <!-- Prompt-Eingabe -->
+  <div class="prompt-wrap">
+    <textarea id="promptInput" placeholder="z.B. BGH-Urteile zum Mietvertrag Kündigung seit 2023 in Bayern ..."></textarea>
+    <button id="btnParse">Analysieren &rarr;</button>
+  </div>
+
+  <!-- Extrahierte Parameter -->
+  <div id="paramCard">
+    <h2>Extrahierte Parameter</h2>
+    <div class="param-grid">
+      <div class="param-field">
+        <label>Suchbegriff</label>
+        <input type="text" id="pSuchbegriff" placeholder="z.B. Mietvertrag Kündigung">
+      </div>
+      <div class="param-field">
+        <label>Gerichtstyp</label>
+        <input type="text" id="pGerichtstyp" placeholder="z.B. BGH, OLG, LG (leer = alle)">
+      </div>
+      <div class="param-field">
+        <label>Max. Treffer pro Portal</label>
+        <input type="number" id="pMaxTreffer" value="5" min="1" max="50">
+      </div>
+      <div class="param-field">
+        <label>Datum von</label>
+        <input type="text" id="pDatumVon" placeholder="TT.MM.JJJJ">
+      </div>
+      <div class="param-field">
+        <label>Datum bis</label>
+        <input type="text" id="pDatumBis" placeholder="TT.MM.JJJJ">
+      </div>
+    </div>
+
+    <span class="portale-label">Portale — <small style="font-weight:400">(alle = kein Filter)</small></span>
+    <div class="portale-grid" id="portaleGrid"></div>
+
+    <div class="param-field" id="anweisungWrap" style="display:none;margin-bottom:20px">
+      <label>Auswertungsanweisung <small style="font-weight:400;color:var(--muted)">— wie soll Claude die Ergebnisse bewerten?</small></label>
+      <input type="text" id="pAnweisung" placeholder="z.B. Hebe spektakuläre Urteile hervor / Erkläre für juristische Laien">
+    </div>
+
+    <div class="action-row">
+      <button id="btnSearch">Suche starten</button>
+      <button id="btnReset">Zurücksetzen</button>
+    </div>
+  </div>
+
+  <!-- Fortschritt -->
+  <div id="progressSection">
+    <h2>Fortschritt</h2>
+    <div id="portalList"></div>
+    <div id="summaryStatus">
+      <div class="spinner"></div>
+      <span>Erstelle KI-Zusammenfassung …</span>
+    </div>
+  </div>
+
+  <!-- PDF-Export -->
+  <button id="btnExport">&#x21E9; Als PDF speichern</button>
+
+  <!-- Zusammenfassung -->
+  <div id="summaryBox">
+    <h2>KI-Zusammenfassung</h2>
+    <div id="summaryContent"></div>
+  </div>
+
+  <!-- Fehler -->
+  <div id="fehlerBox" id="fehlerBox"></div>
+
+  <!-- Treffer -->
+  <div id="resultsSection">
+    <h2 id="resultsHeading">Treffer</h2>
+    <div id="trefferList"></div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const ALL_PORTALE = [];
+let pollTimer = null;
+let currentJob = null;
+
+// ── Hilfsfunktionen ────────────────────────────────────────────────────────
+function show(el) { if (typeof el === 'string') el = document.getElementById(el); el.style.display = 'block'; }
+function hide(el) { if (typeof el === 'string') el = document.getElementById(el); el.style.display = 'none'; }
+function $(id) { return document.getElementById(id); }
+
+function toast(msg, ms = 3000) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), ms);
+}
+
+// ── Portale laden ──────────────────────────────────────────────────────────
+async function ladePortale() {
+  const res = await fetch('/portale');
+  const portale = await res.json();
+  ALL_PORTALE.push(...portale);
+  const grid = $('portaleGrid');
+  portale.forEach(name => {
+    const id = 'cb_' + name.replace(/[^a-zA-Z0-9]/g, '_');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.id = id; cb.value = name; cb.className = 'portal-cb';
+    const label = document.createElement('label');
+    label.htmlFor = id; label.className = 'portal-pill'; label.textContent = name;
+    grid.appendChild(cb); grid.appendChild(label);
+  });
+}
+
+// ── Selektierte Portale ────────────────────────────────────────────────────
+function getSelectedPortale() {
+  return ALL_PORTALE.filter(n => {
+    const id = 'cb_' + n.replace(/[^a-zA-Z0-9]/g, '_');
+    const cb = $(id);
+    return cb && cb.checked;
+  });
+}
+
+function setPortaleChecked(names) {
+  ALL_PORTALE.forEach(n => {
+    const id = 'cb_' + n.replace(/[^a-zA-Z0-9]/g, '_');
+    const cb = $(id);
+    if (cb) cb.checked = names.includes(n);
+  });
+}
+
+// ── Prompt analysieren ─────────────────────────────────────────────────────
+$('btnParse').addEventListener('click', async () => {
+  const prompt = $('promptInput').value.trim();
+  if (!prompt) { toast('Bitte einen Prompt eingeben.'); return; }
+
+  $('btnParse').disabled = true;
+  $('btnParse').textContent = '…';
+
+  try {
+    const res = await fetch('/parse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    });
+    const params = await res.json();
+    if (params.error) { toast('Fehler: ' + params.error); return; }
+
+    $('pSuchbegriff').value = params.suchbegriff || '';
+    $('pDatumVon').value = params.datum_von || '';
+    $('pDatumBis').value = params.datum_bis || '';
+    $('pGerichtstyp').value = params.gerichtstyp || '';
+    $('pAnweisung').value = params.anweisung || '';
+    $('anweisungWrap').style.display = params.anweisung ? 'block' : 'none';
+    setPortaleChecked(params.portale || []);
+
+    show('paramCard');
+    $('paramCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (e) {
+    toast('Netzwerkfehler: ' + e.message);
+  } finally {
+    $('btnParse').disabled = false;
+    $('btnParse').innerHTML = 'Analysieren &rarr;';
+  }
+});
+
+// Enter in Prompt-Feld = Analysieren
+$('promptInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('btnParse').click();
+});
+
+// ── Suche starten ──────────────────────────────────────────────────────────
+$('btnSearch').addEventListener('click', async () => {
+  const sb = $('pSuchbegriff').value.trim();
+  const dv = $('pDatumVon').value.trim();
+  const db = $('pDatumBis').value.trim();
+  const aw = $('pAnweisung').value.trim();
+  if (!sb && !dv && !db && !aw) { toast('Bitte mindestens Suchbegriff, Zeitraum oder Anweisung angeben.'); return; }
+
+  // UI zurücksetzen
+  hide('summaryBox'); hide('resultsSection'); hide('fehlerBox');
+  $('trefferList').innerHTML = '';
+  $('summaryContent').innerHTML = '';
+  $('portalList').innerHTML = '';
+  $('summaryStatus').style.display = 'none';
+
+  show('progressSection');
+  $('btnSearch').disabled = true;
+  $('btnSearch').textContent = 'Suche läuft …';
+
+  const payload = {
+    suchbegriff: sb,
+    datum_von: $('pDatumVon').value.trim() || null,
+    datum_bis: $('pDatumBis').value.trim() || null,
+    gerichtstyp: $('pGerichtstyp').value.trim() || null,
+    anweisung: $('pAnweisung').value.trim() || null,
+    portale: getSelectedPortale(),
+    max_treffer: Math.min(50, Math.max(1, parseInt($('pMaxTreffer').value) || 5)),
+  };
+
+  try {
+    const res = await fetch('/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const { job } = await res.json();
+    currentJob = job;
+    pollTimer = setInterval(() => pollStatus(job), 2000);
+  } catch (e) {
+    toast('Fehler beim Starten der Suche: ' + e.message);
+    $('btnSearch').disabled = false;
+    $('btnSearch').textContent = 'Suche starten';
+  }
+});
+
+// ── Status pollen ──────────────────────────────────────────────────────────
+async function pollStatus(jid) {
+  try {
+    const res = await fetch('/status?job=' + jid);
+    const job = await res.json();
+    renderProgress(job);
+    if (job.status === 'done' || job.status === 'error') {
+      clearInterval(pollTimer);
+      pollTimer = null;
+      onSearchDone(job);
+    }
+  } catch (e) {
+    // transient network error — keep polling
+  }
+}
+
+function renderProgress(job) {
+  const list = $('portalList');
+  job.portale.forEach(p => {
+    let el = document.getElementById('ps_' + p.name);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'ps_' + p.name;
+      el.className = 'portal-status';
+      el.innerHTML = `<div class="dot" id="dot_${p.name}"></div><span>${p.name}</span><span id="cnt_${p.name}" style="color:var(--muted);font-size:12px;margin-left:4px"></span>`;
+      list.appendChild(el);
+    }
+    const dot = document.getElementById('dot_' + p.name);
+    if (dot) dot.className = 'dot ' + p.status;
+    const cnt = document.getElementById('cnt_' + p.name);
+    if (cnt && p.status === 'ok') cnt.textContent = p.treffer + ' Tr.';
+    if (cnt && p.status === 'error') cnt.textContent = '✗';
+  });
+
+  // Zusammenfassungs-Spinner
+  if (job.summary_status === 'running') {
+    $('summaryStatus').style.display = 'flex';
+  } else if (job.summary_status === 'ok') {
+    $('summaryStatus').style.display = 'none';
+  }
+}
+
+// ── PDF-Export ─────────────────────────────────────────────────────────────
+$('btnExport').addEventListener('click', () => window.print());
+
+// ── Suche fertig ───────────────────────────────────────────────────────────
+function onSearchDone(job) {
+  $('btnSearch').disabled = false;
+  $('btnSearch').textContent = 'Suche starten';
+  $('summaryStatus').style.display = 'none';
+
+  // Fehler
+  if (job.fehler && job.fehler.length > 0) {
+    const box = $('fehlerBox');
+    box.innerHTML = '';
+    job.fehler.forEach(f => {
+      const d = document.createElement('div');
+      d.className = 'fehler-item';
+      d.textContent = `${f.portal}: ${f.fehler}`;
+      box.appendChild(d);
+    });
+    show('fehlerBox');
+  }
+
+  // Zusammenfassung
+  if (job.zusammenfassung) {
+    $('summaryContent').innerHTML = marked.parse(job.zusammenfassung);
+    show('summaryBox');
+    $('summaryBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Export-Button + Print-Header
+  const sb = $('pSuchbegriff').value.trim();
+  const dv = $('pDatumVon').value.trim();
+  const db = $('pDatumBis').value.trim();
+  const gt = $('pGerichtstyp').value.trim();
+  const metaParts = [];
+  if (sb) metaParts.push('Suchbegriff: ' + sb);
+  if (dv || db) metaParts.push('Zeitraum: ' + (dv || '?') + ' – ' + (db || 'heute'));
+  if (gt) metaParts.push('Gerichtstyp: ' + gt);
+  metaParts.push('Erstellt: ' + new Date().toLocaleString('de-DE'));
+  $('print-meta').textContent = metaParts.join(' | ');
+  $('btnExport').style.display = 'inline-block';
+
+  // Treffer
+  if (job.treffer && job.treffer.length > 0) {
+    $('resultsHeading').textContent = `Treffer (${job.treffer.length})`;
+    const list = $('trefferList');
+    list.innerHTML = '';
+    job.treffer.forEach(t => {
+      const card = document.createElement('div');
+      card.className = 'treffer-card';
+
+      const titelText = t.titel || '(kein Titel)';
+      const titelHtml = t.url
+        ? `<a href="${escHtml(t.url)}" target="_blank" rel="noopener">${escHtml(titelText)}</a>`
+        : escHtml(titelText);
+
+      const chips = [];
+      if (t.portal) chips.push(`<span class="chip portal">${escHtml(t.portal)}</span>`);
+      if (t.gericht) chips.push(`<span class="chip">${escHtml(t.gericht)}</span>`);
+      if (t.datum) chips.push(`<span class="chip">${escHtml(t.datum)}</span>`);
+      if (t.aktenzeichen) chips.push(`<span class="chip">${escHtml(t.aktenzeichen)}</span>`);
+
+      card.innerHTML = `
+        <div class="treffer-header">
+          <div class="treffer-title">${titelHtml}</div>
+        </div>
+        <div class="treffer-meta">${chips.join('')}</div>
+        ${t.vorschau ? `<div class="treffer-vorschau">${escHtml(t.vorschau.substring(0, 300))}</div>` : ''}
+      `;
+      list.appendChild(card);
+    });
+    show('resultsSection');
+  }
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── Zurücksetzen ───────────────────────────────────────────────────────────
+$('btnReset').addEventListener('click', () => {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  hide('paramCard'); hide('progressSection'); hide('summaryBox');
+  hide('resultsSection'); hide('fehlerBox');
+  $('btnExport').style.display = 'none';
+  $('promptInput').value = '';
+  $('pSuchbegriff').value = '';
+  $('pDatumVon').value = '';
+  $('pDatumBis').value = '';
+  $('pGerichtstyp').value = '';
+  $('pAnweisung').value = '';
+  $('anweisungWrap').style.display = 'none';
+  setPortaleChecked([]);
+  $('trefferList').innerHTML = '';
+  $('summaryContent').innerHTML = '';
+  $('portalList').innerHTML = '';
+  $('btnSearch').disabled = false;
+  $('btnSearch').textContent = 'Suche starten';
+  $('promptInput').focus();
+});
+
+// ── Init ───────────────────────────────────────────────────────────────────
+ladePortale();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+# Rechtsprechungs-Agent — Abhängigkeiten
+# Installation: pip install -r requirements.txt
+
+# Browser-Automatisierung
+playwright>=1.44.0
+
+# Anthropic API (Claude)
+anthropic>=0.30.0
