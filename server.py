@@ -16,6 +16,18 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+# .env laden (ohne externes Package)
+def _load_dotenv():
+    env_file = Path(__file__).parent / ".env"
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, _, val = line.partition("=")
+                os.environ.setdefault(key.strip(), val.strip())
+
+_load_dotenv()
+
 # Windows UTF-8
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -23,9 +35,23 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 
 from main import PORTALE, agent
 from prompt_parser import parse_prompt
+from summarizer import beantworte_folgefrage, erstelle_blogbeitrag
 
 PORT = 8765
 TEMPLATE = Path(__file__).parent / "templates" / "index.html"
+
+# ── Gemeinsamer Event-Loop (verhindert Playwright-Absturz auf Windows) ────────
+# ThreadingHTTPServer erstellt pro Request einen Thread. Würde jeder Thread
+# seinen eigenen ProactorEventLoop starten, kollidieren die IOCP-Handles von
+# Playwright und die Browser-Verbindung bricht mit "Connection closed while
+# reading from the driver" ab. Ein einziger Loop für alle Playwright-Aufrufe
+# löst das Problem.
+_bg_loop = asyncio.new_event_loop()
+threading.Thread(
+    target=_bg_loop.run_forever,
+    daemon=True,
+    name="playwright-loop",
+).start()
 
 # ── Job-Verwaltung ────────────────────────────────────────────────────────────
 
@@ -70,19 +96,22 @@ def _progress_cb(jid: str):
 
 
 def _run_search(jid: str, params: dict):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        result = loop.run_until_complete(agent(
+    future = asyncio.run_coroutine_threadsafe(
+        agent(
             suchbegriff=params["suchbegriff"],
             nur_portale=params.get("portale") or None,
             datum_von=params.get("datum_von"),
             datum_bis=params.get("datum_bis"),
             gerichtstyp=params.get("gerichtstyp"),
             anweisung=params.get("anweisung"),
-            max_treffer=params.get("max_treffer", 5),
+            max_treffer=params.get("max_treffer", 5) or 10000,
+            max_treffer_gesamt=params.get("max_treffer_gesamt") or None,
             on_progress=_progress_cb(jid),
-        ))
+        ),
+        _bg_loop,
+    )
+    try:
+        result = future.result()
         with _jobs_lock:
             _jobs[jid]["status"] = "done"
             _jobs[jid]["treffer"] = result["treffer"]
@@ -92,8 +121,6 @@ def _run_search(jid: str, params: dict):
         with _jobs_lock:
             _jobs[jid]["status"] = "error"
             _jobs[jid]["fehler"].append({"portal": "Agent", "fehler": str(e)})
-    finally:
-        loop.close()
 
 
 # ── HTTP-Handler ──────────────────────────────────────────────────────────────
@@ -165,6 +192,58 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._send_json(job)
 
+    # POST /blogpost — Blogbeitrag aus bestehendem Job erstellen
+    def _handle_blogpost(self):
+        body = self._read_body()
+        jid = body.get("job")
+        if not jid:
+            self._send_json({"error": "job erforderlich."}, 400)
+            return
+        with _jobs_lock:
+            job = _jobs.get(jid)
+        if not job:
+            self._send_json({"error": "Unbekannte Job-ID."}, 404)
+            return
+        try:
+            future = asyncio.run_coroutine_threadsafe(
+                erstelle_blogbeitrag(
+                    treffer=job["treffer"],
+                    zusammenfassung=job["zusammenfassung"],
+                ),
+                _bg_loop,
+            )
+            self._send_json(future.result())
+        except Exception as e:
+            self._send_json({"error": str(e)}, 500)
+
+    # POST /followup — Folgefrage zu bestehendem Job
+    def _handle_followup(self):
+        body = self._read_body()
+        jid = body.get("job")
+        frage = (body.get("frage") or "").strip()
+        verlauf = body.get("verlauf") or []
+        if not jid or not frage:
+            self._send_json({"error": "job und frage erforderlich."}, 400)
+            return
+        with _jobs_lock:
+            job = _jobs.get(jid)
+        if not job:
+            self._send_json({"error": "Unbekannte Job-ID."}, 404)
+            return
+        try:
+            future = asyncio.run_coroutine_threadsafe(
+                beantworte_folgefrage(
+                    treffer=job["treffer"],
+                    zusammenfassung=job["zusammenfassung"],
+                    frage=frage,
+                    verlauf=verlauf,
+                ),
+                _bg_loop,
+            )
+            self._send_json({"antwort": future.result()})
+        except Exception as e:
+            self._send_json({"error": str(e)}, 500)
+
     # GET /portale — Liste aller verfügbaren Portale
     def _handle_portale(self):
         self._send_json([p["name"] for p in PORTALE])
@@ -187,6 +266,10 @@ class Handler(BaseHTTPRequestHandler):
             self._handle_parse()
         elif path == "/search":
             self._handle_search()
+        elif path == "/followup":
+            self._handle_followup()
+        elif path == "/blogpost":
+            self._handle_blogpost()
         else:
             self.send_response(404)
             self.end_headers()

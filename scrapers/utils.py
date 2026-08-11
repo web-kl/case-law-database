@@ -59,9 +59,7 @@ async def suche_juris3(page, portal_id, api_base, suchbegriff, max_treffer, datu
             return null;
         }""")
 
-    searches = []
-    if suchbegriff:
-        searches.append({"id": "Text", "value": suchbegriff})
+    searches = [{"id": "Text", "value": suchbegriff or ""}]
     if datum_von or datum_bis:
         von = datum_von or "01.01.2000"
         bis = datum_bis or datetime.now().strftime("%d.%m.%Y")
@@ -75,7 +73,7 @@ async def suche_juris3(page, portal_id, api_base, suchbegriff, max_treffer, datu
             "CATEGORY_HITS": {},
             "RESULT_LIST": {
                 "start": 1,
-                "size": max_treffer,
+                "size": min(max_treffer, 100),
                 "sort": "juris",
                 "addToHistory": True,
                 "addCategory": True,

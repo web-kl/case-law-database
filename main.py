@@ -7,6 +7,7 @@ eine juristische Zusammenfassung mit Claude.
 import argparse
 import asyncio
 import io
+import re
 import sys
 from datetime import datetime
 
@@ -58,7 +59,45 @@ PORTALE = [
 ]
 
 # Maximale Treffer pro Portal (verhindert Überlastung)
-MAX_TREFFER_PRO_PORTAL = 5
+MAX_TREFFER_PRO_PORTAL = 100
+
+# Gerichtstyp-Mapping: Eingabe (uppercase) → Liste aller passenden Vollnamen.
+# Allgemeine Eingaben (z.B. "SG", "VG") erfassen alle Instanzen der Gerichtsbarkeit.
+# Spezifische Eingaben (z.B. "LSG", "OVG") erfassen nur eine Instanz.
+GERICHTSTYP_MAP: dict[str, list[str]] = {
+    # Sozialgerichtsbarkeit
+    "SG":     ["sozialgericht", "landessozialgericht", "bundessozialgericht"],
+    "LSG":    ["landessozialgericht"],
+    "BSG":    ["bundessozialgericht"],
+
+    # Verwaltungsgerichtsbarkeit
+    "VG":     ["verwaltungsgericht", "oberverwaltungsgericht",
+                "bundesverwaltungsgericht", "verwaltungsgerichtshof"],
+    "OVG":    ["oberverwaltungsgericht"],
+    "VGH":    ["verwaltungsgerichtshof"],
+    "BVERWG": ["bundesverwaltungsgericht"],
+
+    # Finanzgerichtsbarkeit
+    "FG":     ["finanzgericht", "bundesfinanzhof"],
+    "BFH":    ["bundesfinanzhof"],
+
+    # Arbeitsgerichtsbarkeit
+    "ARBG":   ["arbeitsgericht", "landesarbeitsgericht", "bundesarbeitsgericht"],
+    "LAG":    ["landesarbeitsgericht"],
+    "BAG":    ["bundesarbeitsgericht"],
+
+    # Ordentliche Gerichtsbarkeit
+    "AG":     ["amtsgericht", "landgericht", "oberlandesgericht", "bundesgerichtshof"],
+    "LG":     ["landgericht"],
+    "OLG":    ["oberlandesgericht"],
+    "BGH":    ["bundesgerichtshof"],
+    "AMTSG":  ["amtsgericht"],
+
+    # Verfassungsgerichtsbarkeit
+    "VERFG":  ["verfassungsgericht", "verfassungsgerichtshof",
+                "staatsgerichtshof", "bundesverfassungsgericht"],
+    "BVERFG": ["bundesverfassungsgericht"],
+}
 
 # Pause zwischen Portalen in Sekunden (höfliches Crawling)
 PAUSE_SEKUNDEN = 2.0
@@ -74,6 +113,7 @@ async def agent(
     gerichtstyp: str | None = None,
     anweisung: str | None = None,
     max_treffer: int = MAX_TREFFER_PRO_PORTAL,
+    max_treffer_gesamt: int | None = None,
     on_progress=None,  # callable(portal_name, status, treffer_count)
 ) -> dict:
     """
@@ -93,10 +133,30 @@ async def agent(
     if gerichtstyp:
         print(f"  Gerichtstyp : {gerichtstyp}")
     print(f"  Portale     : {', '.join(p['name'] for p in portale)}")
+    if max_treffer_gesamt:
+        print(f"  Max. gesamt : {max_treffer_gesamt}")
     print(f"{'='*60}\n")
 
     alle_treffer: list[dict] = []
     fehler: list[dict] = []
+
+    # Gerichtstyp-Filter vorbereiten (einmalig, nicht pro Portal)
+    gt_upper = gerichtstyp.strip().upper() if gerichtstyp else None
+    gt_name_patterns = []
+    if gt_upper:
+        for name in GERICHTSTYP_MAP.get(gt_upper, []):
+            gt_name_patterns.append(
+                re.compile(r'\b' + re.escape(name) + r'\b', re.IGNORECASE)
+            )
+
+    def _gt_match(t: dict) -> bool:
+        felder = [t.get("gericht") or "", t.get("aktenzeichen") or "", t.get("titel") or ""]
+        felder_upper = [f.upper() for f in felder]
+        # Abkürzung als Substring (SG trifft auch LSG, BSG; VG trifft OVG, VGH)
+        if any(gt_upper in f for f in felder_upper):
+            return True
+        # Vollnamen mit Wortgrenze (Sozialgericht, Landessozialgericht, …)
+        return any(pat.search(f) for pat in gt_name_patterns for f in felder)
 
     for portal in portale:
         print(f"  >> Suche in {portal['name']} ...")
@@ -111,15 +171,8 @@ async def agent(
             )
             for t in treffer:
                 t["portal"] = portal["name"]
-            # Gerichtstyp-Filter
             if gerichtstyp:
-                gt = gerichtstyp.strip().upper()
-                treffer = [
-                    t for t in treffer
-                    if gt in (t.get("gericht") or "").upper()
-                    or gt in (t.get("aktenzeichen") or "").upper()
-                    or gt in (t.get("titel") or "").upper()
-                ]
+                treffer = [t for t in treffer if _gt_match(t)]
             alle_treffer.extend(treffer)
             print(f"     {len(treffer)} Treffer gefunden.")
             if on_progress:
@@ -129,6 +182,10 @@ async def agent(
             fehler.append({"portal": portal["name"], "fehler": str(e)})
             if on_progress:
                 on_progress(portal["name"], "error", 0)
+
+        if max_treffer_gesamt and len(alle_treffer) >= max_treffer_gesamt:
+            print(f"  Gesamtlimit von {max_treffer_gesamt} Treffern erreicht, Suche gestoppt.")
+            break
 
         await asyncio.sleep(PAUSE_SEKUNDEN)
 

@@ -53,6 +53,26 @@
 
   main { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; }
 
+  /* ── Vorlagen ── */
+  #templateRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .template-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .template-btn {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  .template-btn:hover { border-color: var(--accent); color: var(--accent); }
+
   /* ── Prompt-Box ── */
   .prompt-wrap { position: relative; margin-bottom: 16px; }
   #promptInput {
@@ -282,6 +302,131 @@
   }
   #toast.show { opacity: 1; }
 
+  /* ── Folgefragen-Chat ── */
+  #followupSection {
+    display: none;
+    margin-top: 32px;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+  }
+  #followupSection h2 { font-size: .85rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .8px; margin-bottom: 16px; }
+
+  #chatHistory { margin-bottom: 16px; }
+
+  .qa-item { margin-bottom: 18px; }
+  .qa-frage {
+    background: var(--accent-dim);
+    border-radius: 8px 8px 2px 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: #c8d8ff;
+    margin-bottom: 8px;
+    display: inline-block;
+    max-width: 90%;
+    float: right;
+    clear: both;
+  }
+  .qa-antwort {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px 8px 8px 8px;
+    padding: 14px 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    clear: both;
+  }
+  .qa-antwort h1,.qa-antwort h2,.qa-antwort h3 { color: var(--text); font-size: .95rem; margin: 10px 0 4px; }
+  .qa-antwort strong { color: var(--text); }
+  .qa-antwort a { color: var(--accent); }
+  .qa-antwort ul,.qa-antwort ol { padding-left: 18px; margin: 6px 0; }
+  .qa-antwort code { background: var(--surface2); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+
+  .followup-input-row {
+    display: flex; gap: 10px; align-items: flex-end;
+    clear: both;
+  }
+  #followupInput {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 14px;
+    padding: 10px 14px;
+    resize: vertical;
+    min-height: 48px;
+    max-height: 200px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  #followupInput:focus { border-color: var(--accent); }
+  #followupInput::placeholder { color: var(--muted); }
+  #btnFollowup {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity .15s;
+    flex-shrink: 0;
+  }
+  #btnFollowup:disabled { opacity: .4; cursor: default; }
+
+  /* ── Blog-Bereich ── */
+  #blogSection {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 26px;
+    margin-bottom: 28px;
+  }
+  #blogSection h2 { font-size: .85rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .8px; margin-bottom: 18px; }
+
+  .blog-field { margin-bottom: 18px; }
+  .blog-field-label {
+    font-size: 11px; color: var(--muted); font-weight: 600;
+    text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .btn-copy {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--muted);
+    font-size: 11px;
+    padding: 2px 10px;
+    cursor: pointer;
+    transition: color .15s, border-color .15s;
+  }
+  .btn-copy:hover { color: var(--accent); border-color: var(--accent); }
+  .btn-copy.copied { color: var(--green); border-color: var(--green); }
+
+  #blogTitel {
+    font-size: 1.1rem; font-weight: 700;
+    color: var(--text); padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  #blogText { line-height: 1.8; }
+  #blogText h1,#blogText h2,#blogText h3 { color: var(--text); margin: 12px 0 6px; font-size: .95rem; }
+  #blogText strong { color: var(--text); }
+  #blogText ul,#blogText ol { padding-left: 20px; margin: 6px 0; }
+  #blogMeta {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text);
+    font-style: italic;
+  }
+  .meta-counter { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
   /* PDF-Export-Button */
   #btnExport {
     display: none;
@@ -296,55 +441,116 @@
   }
   #btnExport:hover { border-color: var(--accent); color: var(--accent); }
 
+  #btnBlogPost {
+    display: none;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 9px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    margin-left: 10px;
+  }
+  #btnBlogPost:hover { border-color: var(--green); color: var(--green); }
+  #btnBlogPost:disabled { opacity: .4; cursor: default; }
+
   /* ── Print-Styles ── */
   @media print {
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-    body { background: #fff; color: #111; font-family: Georgia, serif; font-size: 11pt; }
+    body { background: #fff !important; color: #111 !important; font-family: Georgia, serif; font-size: 11pt; }
 
     header, #promptInput, .prompt-wrap, #paramCard, #progressSection,
-    #fehlerBox, #btnExport, #toast, #btnReset, #btnSearch, #btnParse { display: none !important; }
+    #fehlerBox, #btnExport, #btnBlogPost, #blogSection, #toast, #btnReset,
+    #btnSearch, #btnParse, .followup-input-row { display: none !important; }
 
     main { max-width: 100%; padding: 0; }
 
     #print-header { display: block !important; margin-bottom: 24pt; border-bottom: 2pt solid #333; padding-bottom: 10pt; }
-    #print-header h1 { font-size: 18pt; margin-bottom: 6pt; }
-    #print-header .print-meta { font-size: 10pt; color: #555; }
+    #print-header h1 { font-size: 18pt; color: #111 !important; margin-bottom: 10pt; }
+    .print-params { font-size: 10pt; border-collapse: collapse; width: 100%; }
+    .print-params td { padding: 3pt 8pt 3pt 0; vertical-align: top; color: #222 !important; }
+    .print-params .pk { font-weight: bold; color: #444 !important; white-space: nowrap; padding-right: 16pt; width: 30%; }
 
     #summaryBox {
       display: block !important;
-      background: #f9f9f9;
-      border: 1pt solid #ccc;
+      background: #f9f9f9 !important;
+      border: 1pt solid #ccc !important;
       border-radius: 0;
       padding: 16pt;
       margin-bottom: 20pt;
     }
-    #summaryBox h2 { font-size: 13pt; color: #333; margin-bottom: 10pt; }
-    #summaryContent { font-size: 11pt; line-height: 1.7; }
-    #summaryContent h1 { font-size: 14pt; margin: 12pt 0 6pt; }
-    #summaryContent h2 { font-size: 12pt; margin: 10pt 0 5pt; }
-    #summaryContent h3 { font-size: 11pt; margin: 8pt 0 4pt; }
-    #summaryContent a { color: #1a56db; }
+    #summaryBox h2 { font-size: 13pt; color: #222 !important; margin-bottom: 10pt; }
+
+    /* Alle Texte in der Zusammenfassung dunkel */
+    #summaryContent { font-size: 11pt; line-height: 1.7; color: #111 !important; }
+    #summaryContent * { color: #111 !important; }
+    #summaryContent h1 { font-size: 14pt; font-weight: bold; color: #000 !important; margin: 12pt 0 6pt; }
+    #summaryContent h2 { font-size: 12pt; font-weight: bold; color: #000 !important; margin: 10pt 0 5pt; }
+    #summaryContent h3 { font-size: 11pt; font-weight: bold; color: #111 !important; margin: 8pt 0 4pt; }
+    #summaryContent strong { color: #000 !important; font-weight: bold; }
+    #summaryContent em { color: #111 !important; }
+    #summaryContent a { color: #1a56db !important; }
     #summaryContent a::after { content: ""; }
+    #summaryContent code { background: #f0f0f0 !important; color: #111 !important; padding: 1px 4px; border-radius: 3px; }
+    #summaryContent hr { border-top: 1pt solid #ccc !important; }
+    #summaryContent ul, #summaryContent ol { color: #111 !important; }
 
     #resultsSection { display: block !important; }
-    #resultsHeading { font-size: 13pt; margin-bottom: 12pt; border-bottom: 1pt solid #ccc; padding-bottom: 6pt; }
+    #resultsHeading { font-size: 13pt; color: #111 !important; margin-bottom: 12pt; border-bottom: 1pt solid #ccc; padding-bottom: 6pt; }
 
     .treffer-card {
-      background: #fff;
-      border: 1pt solid #ddd;
+      background: #fff !important;
+      border: 1pt solid #ddd !important;
       border-radius: 0;
       padding: 10pt 12pt;
       margin-bottom: 10pt;
       page-break-inside: avoid;
     }
-    .treffer-card:hover { border-color: #ddd; }
-    .treffer-title { font-size: 11pt; font-weight: bold; }
-    .treffer-title a { color: #1a56db; text-decoration: none; }
-    .treffer-title a::after { content: " (" attr(href) ")"; font-size: 8pt; color: #555; font-weight: normal; word-break: break-all; }
-    .chip { background: #eee; border: none; color: #333; font-size: 9pt; }
-    .chip.portal { background: #dce8ff; color: #1a56db; }
-    .treffer-vorschau { font-size: 10pt; color: #444; margin-top: 5pt; }
+    .treffer-card:hover { border-color: #ddd !important; }
+    .treffer-title { font-size: 11pt; font-weight: bold; color: #111 !important; }
+    .treffer-title a { color: #1a56db !important; text-decoration: none; }
+    .treffer-title a::after { content: " (" attr(href) ")"; font-size: 8pt; color: #444 !important; font-weight: normal; word-break: break-all; }
+    .chip { background: #eee !important; border: none !important; color: #333 !important; font-size: 9pt; }
+    .chip.portal { background: #dce8ff !important; color: #1a56db !important; }
+    .treffer-vorschau { font-size: 10pt; color: #333 !important; margin-top: 5pt; }
+
+    #followupSection {
+      display: block !important;
+      margin-top: 24pt;
+      border-top: 1pt solid #ccc;
+      padding-top: 16pt;
+    }
+    #followupSection h2 { font-size: 13pt; color: #222 !important; margin-bottom: 12pt; }
+
+    .qa-item { margin-bottom: 14pt; page-break-inside: avoid; }
+    .qa-frage {
+      display: block !important;
+      float: none !important;
+      background: #eef2ff !important;
+      border-left: 3pt solid #4f7ef7;
+      border-radius: 0 !important;
+      padding: 6pt 10pt;
+      font-size: 10pt;
+      color: #111 !important;
+      margin-bottom: 6pt;
+      font-weight: bold;
+    }
+    .qa-antwort {
+      background: #fafafa !important;
+      border: 1pt solid #ddd !important;
+      border-radius: 0 !important;
+      padding: 8pt 10pt;
+      font-size: 10pt;
+      line-height: 1.6;
+      color: #111 !important;
+    }
+    .qa-antwort * { color: #111 !important; }
+    .qa-antwort a { color: #1a56db !important; }
+    .qa-antwort strong { color: #000 !important; font-weight: bold; }
+    .qa-antwort code { background: #f0f0f0 !important; color: #111 !important; }
   }
 </style>
 </head>
@@ -360,7 +566,14 @@
   <!-- Nur im Druck sichtbar -->
   <div id="print-header" style="display:none">
     <h1>Rechtsprechungs-Agent — Suchergebnis</h1>
-    <div class="print-meta" id="print-meta"></div>
+    <div id="print-meta"></div>
+  </div>
+
+  <!-- Vorlagen -->
+  <div id="templateRow">
+    <span class="template-label">Vorlagen:</span>
+    <button class="template-btn" id="btnBlogTemplate">&#x270F; Blog-Vorlage</button>
+    <button class="template-btn" id="btnItTemplate">&#x1F4BB; IT-Recht &amp; Blog</button>
   </div>
 
   <!-- Prompt-Eingabe -->
@@ -382,8 +595,12 @@
         <input type="text" id="pGerichtstyp" placeholder="z.B. BGH, OLG, LG (leer = alle)">
       </div>
       <div class="param-field">
-        <label>Max. Treffer pro Portal</label>
-        <input type="number" id="pMaxTreffer" value="5" min="1" max="50">
+        <label>Max. Treffer pro Portal (0 = unbegrenzt)</label>
+        <input type="number" id="pMaxTreffer" value="5" min="0" max="100">
+      </div>
+      <div class="param-field">
+        <label>Max. Treffer gesamt (0 = unbegrenzt)</label>
+        <input type="number" id="pMaxTrefferGesamt" value="0" min="0" max="10000">
       </div>
       <div class="param-field">
         <label>Datum von</label>
@@ -419,8 +636,42 @@
     </div>
   </div>
 
-  <!-- PDF-Export -->
+  <!-- PDF-Export & Blog-Button -->
   <button id="btnExport">&#x21E9; Als PDF speichern</button>
+  <button id="btnBlogPost">&#x270D; Blogbeitrag erstellen</button>
+
+  <!-- Blog-Ausgabe -->
+  <div id="blogSection">
+    <h2>Blogbeitrag</h2>
+
+    <div class="blog-field">
+      <div class="blog-field-label">
+        <span>Titel</span>
+        <button class="btn-copy" data-target="blogTitelText">Kopieren</button>
+      </div>
+      <div id="blogTitel"></div>
+      <span id="blogTitelText" style="display:none"></span>
+    </div>
+
+    <div class="blog-field">
+      <div class="blog-field-label">
+        <span>Beitragstext</span>
+        <button class="btn-copy" data-target="blogTextRaw">Kopieren</button>
+      </div>
+      <div id="blogText"></div>
+      <span id="blogTextRaw" style="display:none"></span>
+    </div>
+
+    <div class="blog-field">
+      <div class="blog-field-label">
+        <span>Meta-Beschreibung (Suchmaschinen)</span>
+        <button class="btn-copy" data-target="blogMetaText">Kopieren</button>
+      </div>
+      <div id="blogMeta"></div>
+      <div class="meta-counter" id="blogMetaCounter"></div>
+      <span id="blogMetaText" style="display:none"></span>
+    </div>
+  </div>
 
   <!-- Zusammenfassung -->
   <div id="summaryBox">
@@ -437,6 +688,16 @@
     <div id="trefferList"></div>
   </div>
 
+  <!-- Folgefragen -->
+  <div id="followupSection">
+    <h2>Folgefragen zu den Ergebnissen</h2>
+    <div id="chatHistory"></div>
+    <div class="followup-input-row">
+      <textarea id="followupInput" placeholder="Stellen Sie eine Folgefrage zu den gefundenen Entscheidungen …" rows="2"></textarea>
+      <button id="btnFollowup">Fragen &rarr;</button>
+    </div>
+  </div>
+
 </main>
 
 <div id="toast"></div>
@@ -446,6 +707,7 @@
 const ALL_PORTALE = [];
 let pollTimer = null;
 let currentJob = null;
+let chatVerlauf = [];
 
 // ── Hilfsfunktionen ────────────────────────────────────────────────────────
 function show(el) { if (typeof el === 'string') el = document.getElementById(el); el.style.display = 'block'; }
@@ -558,7 +820,8 @@ $('btnSearch').addEventListener('click', async () => {
     gerichtstyp: $('pGerichtstyp').value.trim() || null,
     anweisung: $('pAnweisung').value.trim() || null,
     portale: getSelectedPortale(),
-    max_treffer: Math.min(50, Math.max(1, parseInt($('pMaxTreffer').value) || 5)),
+    max_treffer: (v => isNaN(v) ? 5 : Math.min(100, Math.max(0, v)))(parseInt($('pMaxTreffer').value)),
+    max_treffer_gesamt: parseInt($('pMaxTrefferGesamt').value) || 0,
   };
 
   try {
@@ -622,6 +885,51 @@ function renderProgress(job) {
 // ── PDF-Export ─────────────────────────────────────────────────────────────
 $('btnExport').addEventListener('click', () => window.print());
 
+// ── Folgefragen ────────────────────────────────────────────────────────────
+async function stelleFolgefrage() {
+  const frage = $('followupInput').value.trim();
+  if (!frage || !currentJob) return;
+
+  $('btnFollowup').disabled = true;
+  $('btnFollowup').textContent = '…';
+  $('followupInput').value = '';
+
+  // Frage sofort anzeigen
+  const history = $('chatHistory');
+  const item = document.createElement('div');
+  item.className = 'qa-item';
+  item.innerHTML = `<div class="qa-frage">${escHtml(frage)}</div>
+    <div class="qa-antwort"><div class="spinner" style="margin:8px 0"></div></div>`;
+  history.appendChild(item);
+  item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  try {
+    const res = await fetch('/followup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job: currentJob, frage, verlauf: chatVerlauf }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      item.querySelector('.qa-antwort').textContent = 'Fehler: ' + data.error;
+    } else {
+      item.querySelector('.qa-antwort').innerHTML = marked.parse(data.antwort);
+      chatVerlauf.push({ frage, antwort: data.antwort });
+    }
+  } catch (e) {
+    item.querySelector('.qa-antwort').textContent = 'Netzwerkfehler: ' + e.message;
+  } finally {
+    $('btnFollowup').disabled = false;
+    $('btnFollowup').innerHTML = 'Fragen &rarr;';
+    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+$('btnFollowup').addEventListener('click', stelleFolgefrage);
+$('followupInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) stelleFolgefrage();
+});
+
 // ── Suche fertig ───────────────────────────────────────────────────────────
 function onSearchDone(job) {
   $('btnSearch').disabled = false;
@@ -649,17 +957,37 @@ function onSearchDone(job) {
   }
 
   // Export-Button + Print-Header
-  const sb = $('pSuchbegriff').value.trim();
-  const dv = $('pDatumVon').value.trim();
-  const db = $('pDatumBis').value.trim();
-  const gt = $('pGerichtstyp').value.trim();
-  const metaParts = [];
-  if (sb) metaParts.push('Suchbegriff: ' + sb);
-  if (dv || db) metaParts.push('Zeitraum: ' + (dv || '?') + ' – ' + (db || 'heute'));
-  if (gt) metaParts.push('Gerichtstyp: ' + gt);
-  metaParts.push('Erstellt: ' + new Date().toLocaleString('de-DE'));
-  $('print-meta').textContent = metaParts.join(' | ');
+  const sb   = $('pSuchbegriff').value.trim();
+  const dv   = $('pDatumVon').value.trim();
+  const db   = $('pDatumBis').value.trim();
+  const gt   = $('pGerichtstyp').value.trim();
+  const aw   = $('pAnweisung').value.trim();
+  const mt   = $('pMaxTreffer').value.trim();
+  const prompt = $('promptInput').value.trim();
+  const selPortale = getSelectedPortale();
+
+  const rows = [];
+  if (prompt) rows.push(['Suchanfrage', prompt]);
+  if (sb)     rows.push(['Suchbegriff', sb]);
+  if (dv || db) rows.push(['Zeitraum', (dv || '?') + ' – ' + (db || 'heute')]);
+  if (gt)     rows.push(['Gerichtstyp', gt]);
+  if (aw)     rows.push(['Auswertungsanweisung', aw]);
+  if (selPortale.length) rows.push(['Portale', selPortale.join(', ')]);
+  rows.push(['Max. Treffer / Portal', mt || '5']);
+  rows.push(['Erstellt am', new Date().toLocaleString('de-DE')]);
+
+  const tableHtml = '<table class="print-params">' +
+    rows.map(([k, v]) => `<tr><td class="pk">${escHtml(k)}</td><td>${escHtml(v)}</td></tr>`).join('') +
+    '</table>';
+  $('print-meta').innerHTML = tableHtml;
   $('btnExport').style.display = 'inline-block';
+  $('btnBlogPost').style.display = 'inline-block';
+
+  // Folgefragen einblenden
+  chatVerlauf = [];
+  $('chatHistory').innerHTML = '';
+  $('followupInput').value = '';
+  show('followupSection');
 
   // Treffer
   if (job.treffer && job.treffer.length > 0) {
@@ -706,8 +1034,10 @@ function escHtml(s) {
 $('btnReset').addEventListener('click', () => {
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
   hide('paramCard'); hide('progressSection'); hide('summaryBox');
-  hide('resultsSection'); hide('fehlerBox');
+  hide('resultsSection'); hide('fehlerBox'); hide('followupSection');
   $('btnExport').style.display = 'none';
+  $('btnBlogPost').style.display = 'none';
+  hide('blogSection');
   $('promptInput').value = '';
   $('pSuchbegriff').value = '';
   $('pDatumVon').value = '';
@@ -722,6 +1052,72 @@ $('btnReset').addEventListener('click', () => {
   $('btnSearch').disabled = false;
   $('btnSearch').textContent = 'Suche starten';
   $('promptInput').focus();
+});
+
+// ── Blogbeitrag ────────────────────────────────────────────────────────────
+$('btnBlogPost').addEventListener('click', async () => {
+  if (!currentJob) return;
+  $('btnBlogPost').disabled = true;
+  $('btnBlogPost').textContent = '…';
+  hide('blogSection');
+
+  try {
+    const res = await fetch('/blogpost', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job: currentJob }),
+    });
+    const data = await res.json();
+    if (data.error) { toast('Fehler: ' + data.error); return; }
+
+    $('blogTitel').textContent = data.titel || '';
+    $('blogTitelText').textContent = data.titel || '';
+    $('blogText').innerHTML = marked.parse(data.blogbeitrag || '');
+    $('blogTextRaw').textContent = data.blogbeitrag || '';
+    const meta = data.meta || '';
+    $('blogMeta').textContent = meta;
+    $('blogMetaText').textContent = meta;
+    $('blogMetaCounter').textContent = meta.length + ' / 160 Zeichen';
+    $('blogMetaCounter').style.color = meta.length > 160 ? 'var(--red)' : 'var(--muted)';
+
+    show('blogSection');
+    $('blogSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    toast('Netzwerkfehler: ' + e.message);
+  } finally {
+    $('btnBlogPost').disabled = false;
+    $('btnBlogPost').innerHTML = '&#x270D; Blogbeitrag erstellen';
+  }
+});
+
+// Kopieren-Buttons
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.btn-copy');
+  if (!btn) return;
+  const src = document.getElementById(btn.dataset.target);
+  if (!src) return;
+  navigator.clipboard.writeText(src.textContent).then(() => {
+    btn.textContent = '✓ Kopiert';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Kopieren'; btn.classList.remove('copied'); }, 2000);
+  });
+});
+
+// ── Vorlagen ───────────────────────────────────────────────────────────────
+const BLOG_PROMPT = "Suche alle Entscheidungen der letzten 7 Tage und wähle die 3 interessantesten Urteile für einen juristischen Blog für die breite Öffentlichkeit aus. Auswahlkriterien: gesellschaftliche Relevanz, Alltagsbezug, Überraschungswert oder Medienpotenzial. Fasse jede Entscheidung so zusammen, dass sie auch für juristische Laien gut verständlich ist, und erkläre jeweils kurz, warum die Entscheidung für die Öffentlichkeit bedeutsam ist.";
+
+$('btnBlogTemplate').addEventListener('click', () => {
+  $('promptInput').value = BLOG_PROMPT;
+  $('promptInput').focus();
+  $('promptInput').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+
+const IT_PROMPT = "Suche alle Entscheidungen der letzten 7 Tage aus allen Rechtsgebieten. Wähle die 10 interessantesten Urteile aus und stelle jedes einzeln vor – Auswahlkriterien: gesellschaftliche Relevanz, Alltagsbezug, Überraschungswert oder Medienpotenzial. Achte dabei besonders auf Entscheidungen zu elektronischer Datenverarbeitung, Datenschutz und KI (insbesondere DSGVO, BDSG, AI Act, Datenschutzverletzungen, automatisierter Entscheidungsfindung und IT-Sicherheit). Fasse jede der 10 ausgewählten Entscheidungen so zusammen, dass sie auch für juristische Laien gut verständlich ist, und erkläre jeweils, welche praktischen Konsequenzen sich für Privatpersonen, Verbraucher, Unternehmen und Behörden ergeben.";
+
+$('btnItTemplate').addEventListener('click', () => {
+  $('promptInput').value = IT_PROMPT;
+  $('promptInput').focus();
+  $('promptInput').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 });
 
 // ── Init ───────────────────────────────────────────────────────────────────

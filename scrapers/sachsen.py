@@ -26,7 +26,7 @@ async def suche_sachsen(suchbegriff, max_treffer=5, datum_von=None, datum_bis=No
                 var d2 = document.querySelector('#DV1_C35');
                 if(d1 && args[1]) d1.value = args[1];
                 if(d2 && args[2]) d2.value = args[2];
-            }""", [suchbegriff, datum_von or "", datum_bis or ""])
+            }""", [suchbegriff or "", datum_von or "", datum_bis or ""])
 
             await frame.click("#DV1_C24", force=True)
             await page.wait_for_timeout(6000)

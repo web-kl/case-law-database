@@ -79,7 +79,7 @@ Bleibe dabei strikt bei den übergebenen Informationen. Erfinde keine Aktenzeich
 
     # Synchroner API-Aufruf (Anthropic SDK ist nicht async-nativ)
     import asyncio
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     antwort = await loop.run_in_executor(None, _api_aufruf, prompt)
 
     return antwort
@@ -91,13 +91,111 @@ def _api_aufruf(prompt: str) -> str:
 
     nachricht = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=2000,
+        max_tokens=4000,
         messages=[
             {"role": "user", "content": prompt}
         ],
     )
 
     return nachricht.content[0].text
+
+
+_BLOGBEITRAG_TOOL = {
+    "name": "blogbeitrag_ausgeben",
+    "description": "Gibt den fertigen Blogbeitrag strukturiert aus.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "titel": {
+                "type": "string",
+                "description": "Prägnanter, neugierig machender Titel, max. 70 Zeichen.",
+            },
+            "blogbeitrag": {
+                "type": "string",
+                "description": (
+                    "Fertiger Blogbeitrag als Markdown. Struktur: kurze Einleitung "
+                    "(2-3 Sätze), Hauptteil mit den wichtigsten Entscheidungen in "
+                    "Alltagssprache ohne Juristenjargon, kurzes Fazit. 300-500 Wörter."
+                ),
+            },
+            "meta": {
+                "type": "string",
+                "description": "Meta-Beschreibung für Suchmaschinen, max. 160 Zeichen.",
+            },
+        },
+        "required": ["titel", "blogbeitrag", "meta"],
+    },
+}
+
+
+def _api_aufruf_blog(prompt: str) -> dict:
+    client = _get_client()
+    resp = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=2000,
+        tools=[_BLOGBEITRAG_TOOL],
+        tool_choice={"type": "tool", "name": "blogbeitrag_ausgeben"},
+        messages=[{"role": "user", "content": prompt}],
+    )
+    for block in resp.content:
+        if block.type == "tool_use" and block.name == "blogbeitrag_ausgeben":
+            return block.input
+    return {"titel": "", "blogbeitrag": "", "meta": ""}
+
+
+async def erstelle_blogbeitrag(
+    treffer: list[dict],
+    zusammenfassung: str,
+) -> dict:
+    """Erstellt einen fertigen Blogbeitrag mit Titel, Text und Meta-Beschreibung."""
+    treffer_text = _formatiere_treffer(treffer)
+
+    prompt = f"""Du bist Redakteur eines populären Rechtsblogs für die breite Öffentlichkeit. Erstelle basierend auf der folgenden Recherche einen fertigen Blogbeitrag.
+
+ZUSAMMENFASSUNG DER RECHERCHE:
+{zusammenfassung}
+
+GEFUNDENE ENTSCHEIDUNGEN:
+{treffer_text}
+
+Schreibe für juristische Laien. Erkläre, was die Entscheidungen für den Alltag der Leser bedeuten."""
+
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, _api_aufruf_blog, prompt)
+
+
+async def beantworte_folgefrage(
+    treffer: list[dict],
+    zusammenfassung: str,
+    frage: str,
+    verlauf: list[dict] | None = None,
+) -> str:
+    """Beantwortet eine Folgefrage zu den bereits gefundenen Ergebnissen."""
+    treffer_text = _formatiere_treffer(treffer)
+
+    verlauf_block = ""
+    if verlauf:
+        for v in verlauf:
+            verlauf_block += f"\nFrage: {v['frage']}\nAntwort: {v['antwort']}\n"
+        verlauf_block = "\n\nBisheriger Gesprächsverlauf:\n" + verlauf_block
+
+    prompt = f"""Du bist ein juristischer Assistent. Der Nutzer hat eine Recherche in deutschen Rechtsprechungsdatenbanken durchgeführt und stellt nun eine Folgefrage zu den Ergebnissen.
+
+ZUSAMMENFASSUNG DER RECHERCHE:
+{zusammenfassung}
+
+GEFUNDENE ENTSCHEIDUNGEN:
+{treffer_text}
+{verlauf_block}
+
+AKTUELLE FRAGE:
+{frage}
+
+Beantworte die Frage präzise und basierend auf den vorliegenden Ergebnissen. Zitiere relevante Entscheidungen mit Gericht und Aktenzeichen, wo sinnvoll. Wenn die Frage nicht aus den Ergebnissen beantwortet werden kann, weise klar darauf hin."""
+
+    import asyncio
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, _api_aufruf, prompt)
 
 
 def _formatiere_treffer(treffer: list[dict]) -> str:

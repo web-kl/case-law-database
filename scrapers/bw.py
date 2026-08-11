@@ -40,7 +40,7 @@ async def suche_bw(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None, g
                             wait_until="domcontentloaded", timeout=30000)
             await page.wait_for_timeout(3000)
 
-            searches = [{"id": "Text", "value": suchbegriff}]
+            searches = [{"id": "Text", "value": suchbegriff or ""}]
             if datum_von or datum_bis:
                 von = datum_von or "01.01.2000"
                 bis = datum_bis or datetime.now().strftime("%d.%m.%Y")
@@ -54,7 +54,7 @@ async def suche_bw(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None, g
                     "CATEGORY_HITS": {},
                     "RESULT_LIST": {
                         "start": 1,
-                        "size": max_treffer,
+                        "size": min(max_treffer, 100),
                         "sort": "juris",
                         "addToHistory": True,
                         "addCategory": True,

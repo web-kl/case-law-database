@@ -18,7 +18,7 @@ async def suche_brandenburg(suchbegriff, max_treffer=5, datum_von=None, datum_bi
                 except Exception:
                     return None
 
-            await page.fill("input[name='input_fulltext']", suchbegriff)
+            await page.fill("input[name='input_fulltext']", suchbegriff or "")
             if datum_von:
                 await page.fill("input[name='input_date_promulgation_from']", _de_to_iso(datum_von))
             if datum_bis:
