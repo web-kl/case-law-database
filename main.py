@@ -7,7 +7,10 @@ Alle Scraper und die Claude-Zusammenfassung sind synchron – kein asyncio.
 
 import argparse
 import io
+import json
+import os
 import re
+import subprocess
 import sys
 import time
 from datetime import datetime
@@ -87,6 +90,53 @@ GERICHTSTYP_MAP: dict[str, list[str]] = {
 
 PAUSE_SEKUNDEN = 2.0
 
+# Pfad zum Subprocess-Skript
+_SCRAPER_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "run_scraper.py")
+_PROJECT_DIR    = os.path.dirname(os.path.abspath(__file__))
+
+
+def _run_scraper_subprocess(
+    portal_name: str,
+    suchbegriff: str,
+    max_treffer: int,
+    datum_von,
+    datum_bis,
+) -> list[dict]:
+    """
+    Startet einen Scraper als eigenen Python-Prozess.
+    Vermeidet Playwright-Windows-Assertion dauerhaft:
+    kein geteilter Event-Loop, keine IOCP-Konflikte.
+    """
+    params = json.dumps({
+        "suchbegriff": suchbegriff,
+        "max_treffer":  max_treffer,
+        "datum_von":    datum_von,
+        "datum_bis":    datum_bis,
+    }, ensure_ascii=False)
+
+    proc = subprocess.run(
+        [sys.executable, _SCRAPER_SCRIPT, portal_name, params],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=180,
+        cwd=_PROJECT_DIR,
+    )
+
+    if proc.returncode != 0:
+        err = (proc.stderr or proc.stdout or "").strip()
+        raise RuntimeError(err[:500] if err else "Subprocess fehlgeschlagen ohne Fehlermeldung")
+
+    stdout = proc.stdout.strip()
+    if not stdout:
+        raise RuntimeError("Scraper-Subprocess hat keine Ausgabe geliefert")
+
+    data = json.loads(stdout)
+    if isinstance(data, dict) and "error" in data:
+        raise RuntimeError(data["error"])
+    return data
+
 
 # ── Haupt-Agent ───────────────────────────────────────────────────────────────
 
@@ -145,11 +195,12 @@ def agent(
         if on_progress:
             on_progress(portal["name"], "running", None)
         try:
-            treffer = portal["funktion"](
-                suchbegriff=suchbegriff,
-                max_treffer=max_treffer,
-                datum_von=datum_von,
-                datum_bis=datum_bis,
+            treffer = _run_scraper_subprocess(
+                portal["name"],
+                suchbegriff,
+                max_treffer,
+                datum_von,
+                datum_bis,
             )
             for t in treffer:
                 t["portal"] = portal["name"]
