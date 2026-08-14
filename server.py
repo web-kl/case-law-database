@@ -41,17 +41,32 @@ PORT = 8765
 TEMPLATE = Path(__file__).parent / "templates" / "index.html"
 
 # ── Gemeinsamer Event-Loop (verhindert Playwright-Absturz auf Windows) ────────
-# ThreadingHTTPServer erstellt pro Request einen Thread. Würde jeder Thread
-# seinen eigenen ProactorEventLoop starten, kollidieren die IOCP-Handles von
-# Playwright und die Browser-Verbindung bricht mit "Connection closed while
-# reading from the driver" ab. Ein einziger Loop für alle Playwright-Aufrufe
-# löst das Problem.
-_bg_loop = asyncio.new_event_loop()
+# Windows ProactorEventLoop (IOCP) muss in DEMSELBEN Thread erstellt UND
+# ausgeführt werden. Wird new_event_loop() im Haupt-Thread aufgerufen und
+# run_forever() in einem anderen Thread, kollidieren die IOCP-Handles →
+# "Connection closed while reading from the driver".
+# Lösung: Loop komplett im Daemon-Thread erstellen (inkl. set_event_loop),
+# dann erst run_forever() – erst wenn _bg_ready gesetzt ist, ist _bg_loop
+# sicher verwendbar.
+_bg_loop: asyncio.AbstractEventLoop | None = None
+_bg_ready = threading.Event()
+
+
+def _run_playwright_loop() -> None:
+    global _bg_loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)   # loop als "current" für diesen Thread
+    _bg_loop = loop
+    _bg_ready.set()                # Signal: _bg_loop ist jetzt sicher
+    loop.run_forever()
+
+
 threading.Thread(
-    target=_bg_loop.run_forever,
+    target=_run_playwright_loop,
     daemon=True,
     name="playwright-loop",
 ).start()
+_bg_ready.wait(timeout=5)  # Kurz warten bis Loop läuft
 
 # ── Job-Verwaltung ────────────────────────────────────────────────────────────
 

@@ -194,7 +194,7 @@ AKTUELLE FRAGE:
 Beantworte die Frage präzise und basierend auf den vorliegenden Ergebnissen. Zitiere relevante Entscheidungen mit Gericht und Aktenzeichen, wo sinnvoll. Wenn die Frage nicht aus den Ergebnissen beantwortet werden kann, weise klar darauf hin."""
 
     import asyncio
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, _api_aufruf, prompt)
 
 
