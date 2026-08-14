@@ -1,70 +1,70 @@
-# Rechtsprechungs-Agent
+# German Case Law Agent
 
-Durchsucht automatisch **17 deutsche Gerichtsdatenbanken** (Bund + alle Bundesländer)
-und erstellt strukturierte juristische Zusammenfassungen sowie Blogbeiträge mit Claude (Anthropic).
+Automatically searches **17 German court databases** (federal + all 16 states)
+and generates structured legal summaries and blog posts using Claude (Anthropic).
 
 ## Features
 
-- 🔍 **17 Portale** – Bund, alle 16 Bundesländer
-- 🌐 **Web-UI** – Browser-Interface auf `http://localhost:8765`
-- 📋 **Vorlagen** – vordefinierte Suchanfragen (Tagesüberblick, IT-Recht & Blog, …)
-- 📝 **Zusammenfassung** – strukturierte juristische Analyse mit Claude
-- 📰 **Blogbeitrag** – laienverständlicher Beitrag inkl. Titel und Meta-Description
-- 💬 **Folgefragen** – Konversation über gefundene Entscheidungen
-- 📅 **Datum-Filter** – Einschränkung auf Zeiträume
-- ⚖️ **Gerichtstyp-Filter** – z. B. nur OLG, VG, LAG
-- 🔢 **Treffermengen** – konfigurierbar pro Portal und gesamt
+- 🔍 **17 portals** – federal courts and all 16 German states
+- 🌐 **Web UI** – browser interface at `http://localhost:8765`
+- 📋 **Templates** – pre-defined searches (daily overview, IT law & blog, …)
+- 📝 **Summaries** – structured legal analysis powered by Claude
+- 📰 **Blog posts** – plain-language articles with title and meta description
+- 💬 **Follow-up questions** – conversational Q&A about found decisions
+- 📅 **Date filter** – restrict searches to specific time periods
+- ⚖️ **Court type filter** – e.g. only OLG, VG, LAG
+- 🔢 **Result limits** – configurable per portal and globally
 
-## Abgedeckte Datenbanken
+## Covered Databases
 
-| Portal | URL | Datenbank-Typ |
+| State / Portal | URL | Type |
 |---|---|---|
-| **Bund** | rechtsprechung-im-internet.de | Formular (Playwright) |
-| **Baden-Württemberg** | landesrecht-bw.de | juris3 REST-API |
-| **Bayern** | gesetze-bayern.de | Formular (Playwright) |
-| **Berlin** | gesetze.berlin.de | juris3 REST-API |
-| **Brandenburg** | gerichtsentscheidungen.brandenburg.de | Formular (Playwright) |
-| **Bremen** | OLG, OVG, VG, LAG (4 Portale) | Formular (Playwright) |
-| **Hamburg** | landesrecht-hamburg.de | juris3 REST-API |
-| **Hessen** | lareda.hessenrecht.hessen.de | juris3 REST-API |
-| **Mecklenburg-Vorpommern** | landesrecht-mv.de | juris3 REST-API |
-| **Niedersachsen** | voris.wolterskluwer-online.de | URL-Parameter (Playwright) |
-| **NRW** | nrwesuche.justiz.nrw.de | Formular (Playwright) |
-| **Rheinland-Pfalz** | landesrecht.rlp.de | juris3 REST-API |
-| **Saarland** | recht.saarland.de | juris3 REST-API |
-| **Sachsen** | esamosplus + OVG-Portal (2 Portale) | Formular (Playwright) |
-| **Sachsen-Anhalt** | landesrecht.sachsen-anhalt.de | juris3 REST-API |
-| **Schleswig-Holstein** | gesetze-rechtsprechung.sh.juris.de | juris3 REST-API |
-| **Thüringen** | landesrecht.thueringen.de | juris3 REST-API |
+| **Federal (Bund)** | rechtsprechung-im-internet.de | Form (Playwright) |
+| **Baden-Württemberg** | landesrecht-bw.de | juris3 REST API |
+| **Bavaria** | gesetze-bayern.de | Form (Playwright) |
+| **Berlin** | gesetze.berlin.de | juris3 REST API |
+| **Brandenburg** | gerichtsentscheidungen.brandenburg.de | Form (Playwright) |
+| **Bremen** | OLG, OVG, VG, LAG (4 portals) | Form (Playwright) |
+| **Hamburg** | landesrecht-hamburg.de | juris3 REST API |
+| **Hesse** | lareda.hessenrecht.hessen.de | juris3 REST API |
+| **Mecklenburg-Vorpommern** | landesrecht-mv.de | juris3 REST API |
+| **Lower Saxony** | voris.wolterskluwer-online.de | URL params (Playwright) |
+| **North Rhine-Westphalia** | nrwesuche.justiz.nrw.de | Form (Playwright) |
+| **Rhineland-Palatinate** | landesrecht.rlp.de | juris3 REST API |
+| **Saarland** | recht.saarland.de | juris3 REST API |
+| **Saxony** | esamosplus + OVG portal (2 portals) | Form (Playwright) |
+| **Saxony-Anhalt** | landesrecht.sachsen-anhalt.de | juris3 REST API |
+| **Schleswig-Holstein** | gesetze-rechtsprechung.sh.juris.de | juris3 REST API |
+| **Thuringia** | landesrecht.thueringen.de | juris3 REST API |
 
-## Voraussetzungen
+## Requirements
 
-- Python 3.11 oder neuer
-- Anthropic API-Key ([console.anthropic.com](https://console.anthropic.com/))
+- Python 3.11 or newer
+- Anthropic API key ([console.anthropic.com](https://console.anthropic.com/))
 
 ## Installation
 
-### 1. Abhängigkeiten installieren
+### 1. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Playwright-Browser installieren (einmalig)
+### 2. Install Playwright browser (once)
 
 ```bash
 playwright install chromium
 ```
 
-### 3. API-Key konfigurieren
+### 3. Configure API key
 
-Datei `.env` im Projektverzeichnis anlegen:
+Create a `.env` file in the project directory:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Alternativ als Umgebungsvariable:
+Or set it as an environment variable:
 
 ```powershell
 # Windows PowerShell
@@ -74,79 +74,79 @@ $env:ANTHROPIC_API_KEY = "sk-ant-..."
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-## Starten
+## Starting the Application
 
-### Windows (empfohlen)
+### Windows (recommended)
 
 ```
 start.bat
 ```
 
-Öffnet automatisch das Konsolenfenster und den Browser auf `http://localhost:8765`.
+Opens the console window and browser at `http://localhost:8765` automatically.
 
-### Manuell
+### Manual
 
 ```bash
 python server.py
 ```
 
-Dann Browser öffnen: `http://localhost:8765`
+Then open your browser at `http://localhost:8765`.
 
-## Bedienung
+## Usage
 
-### Suche starten
+### Running a search
 
-1. **Suchbegriff** eingeben oder eine **Vorlage** auswählen
-2. Optional: Datum von/bis, Gerichtstyp, Portale einschränken
-3. **Suche starten** klicken – die Portale werden live abgehakt
-4. Nach Abschluss erscheint die **juristische Zusammenfassung**
+1. Enter a **search term** or select a **template**
+2. Optionally set date range, court type, or restrict to specific portals
+3. Click **"Search"** – portals are checked off live as they complete
+4. The **legal summary** appears when all portals are done
 
-### Vorlagen
+### Templates
 
-| Vorlage | Beschreibung |
+| Template | Description |
 |---|---|
-| 📅 Tagesüberblick | Neueste Entscheidungen der letzten 7 Tage |
-| 💻 IT-Recht & Blog | Alle interessanten Urteile + Fokus auf DSGVO, KI, IT |
+| 📅 Daily Overview | Most recent decisions from the last 7 days |
+| 💻 IT Law & Blog | All notable rulings with a focus on GDPR, AI Act, IT security |
 
-### Blogbeitrag erstellen
+### Blog post generation
 
-Nach einer Suche: Button **„Blogbeitrag erstellen"** → Claude erstellt einen
-laienverständlichen Beitrag mit Titel und Meta-Description (via Anthropic Tool Use).
+After a search: click **"Create blog post"** → Claude generates a plain-language
+article with title and meta description (via Anthropic Tool Use).
 
-### Folgefragen
+### Follow-up questions
 
-Im Eingabefeld unterhalb der Zusammenfassung weitere Fragen zu den
-gefundenen Entscheidungen stellen. Claude antwortet auf Basis der Treffer.
+Use the input field below the summary to ask further questions about the found
+decisions. Claude answers based on the retrieved case law.
 
-## Treffermengen
+## Result Limits
 
-| Feld | Bedeutung |
+| Field | Meaning |
 |---|---|
-| **Treffer je Portal** | Max. Treffer pro Datenbank (0 = unbegrenzt, max. 100) |
-| **Gesamtlimit** | Stopp wenn diese Zahl über alle Portale erreicht ist (0 = kein Limit) |
+| **Results per portal** | Max. results per database (0 = unlimited, max. 100) |
+| **Global limit** | Stop once this total is reached across all portals (0 = no limit) |
 
-## Projektstruktur
+## Project Structure
 
 ```
 rechtsprechung_agent/
-├── server.py              # HTTP-Server (localhost:8765)
-├── main.py                # Agenten-Steuerung, Portal-Liste
-├── run_scraper.py         # Subprocess-Wrapper für Playwright (Windows-Fix)
-├── summarizer.py          # Claude API (Zusammenfassung, Blog, Folgefragen)
-├── prompt_parser.py       # Natürlichsprachliche Prompt-Analyse
-├── start.bat              # Windows-Starter
-├── .env                   # API-Key (nicht committen!)
+├── server.py              # HTTP server (localhost:8765)
+├── main.py                # Agent logic, portal list
+├── run_scraper.py         # Subprocess wrapper for Playwright (Windows fix)
+├── summarizer.py          # Claude API (summary, blog post, follow-up)
+├── prompt_parser.py       # Natural language prompt analysis
+├── start.bat              # Windows launcher
+├── .env                   # API key (do not commit!)
 ├── requirements.txt
 ├── templates/
-│   └── index.html         # Web-UI
+│   └── index.html         # Web UI
 ├── scrapers/
-│   ├── utils.py           # juris3 REST-API (generisch)
+│   ├── utils.py           # juris3 REST API (generic)
 │   ├── bund.py
 │   ├── bw.py
 │   ├── bayern.py
 │   ├── berlin.py
 │   ├── brandenburg.py
-│   ├── bremen.py          # 4 Bremer Gerichte
+│   ├── bremen.py          # 4 Bremen courts
 │   ├── hamburg.py
 │   ├── hessen.py
 │   ├── mv.py
@@ -158,17 +158,17 @@ rechtsprechung_agent/
 │   ├── sachsen_anhalt.py
 │   ├── sh.py
 │   └── thueringen.py
-└── output/                # Ergebnisdateien (auto-erstellt)
+└── output/                # Result files (auto-created)
 ```
 
-## Neues Portal hinzufügen
+## Adding a New Portal
 
-### Scraper anlegen (`scrapers/meinland.py`)
+### 1. Create the scraper (`scrapers/mystate.py`)
 
 ```python
 from playwright.sync_api import sync_playwright
 
-def suche_meinland(
+def suche_mystate(
     suchbegriff: str,
     max_treffer: int = 10,
     datum_von=None,
@@ -179,12 +179,12 @@ def suche_meinland(
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
         try:
-            # ... Scraping-Logik ...
+            # ... scraping logic ...
             return [{
                 "titel": "...",
                 "url": "...",
                 "gericht": "...",
-                "datum": "TT.MM.JJJJ",
+                "datum": "DD.MM.YYYY",
                 "aktenzeichen": "...",
                 "vorschau": "...",
             }]
@@ -192,54 +192,53 @@ def suche_meinland(
             browser.close()
 ```
 
-### In `run_scraper.py` eintragen
+### 2. Register in `run_scraper.py`
 
 ```python
 SCRAPER_MAP = {
     ...
-    "Meinland": ("scrapers.meinland", "suche_meinland"),
+    "MyState": ("scrapers.mystate", "suche_mystate"),
 }
 ```
 
-### In `main.py` eintragen
+### 3. Register in `main.py`
 
 ```python
-from scrapers.meinland import suche_meinland
+from scrapers.mystate import suche_mystate
 
 PORTALE = [
     ...
-    {"name": "Meinland", "funktion": suche_meinland},
+    {"name": "MyState", "funktion": suche_mystate},
 ]
 ```
 
-## Technische Hinweise
+## Technical Notes
 
-### Warum Subprocesses?
+### Why subprocesses?
 
-Playwright's Node.js-Treiber verwendet libuv, das beim Start `GetConsoleTitleW()` aufruft.
-Unter Windows schlägt dieser Aufruf fehl, wenn der Prozess in einem Thread (statt im
-Haupt-Thread) gestartet wird – Ergebnis: `Assertion failed: process_title`.
+Playwright's Node.js driver uses libuv, which calls `GetConsoleTitleW()` on startup.
+On Windows, this call fails when the process is launched from a background thread
+rather than the main thread — resulting in `Assertion failed: process_title` in
+`src/win/util.c`.
 
-Als Lösung wird jeder Scraper als eigener Python-Subprocess gestartet (`run_scraper.py`).
-Jeder Subprocess bekommt seinen eigenen frischen Prozesskontext, in dem Playwright
-problemlos startet.
+The solution: each scraper is launched as a separate Python subprocess via
+`run_scraper.py`. Every subprocess gets its own clean process context in which
+Playwright starts without issues.
 
-### API-Limits
+### API limits
 
-- juris3-Portale (REST-API): max. 100 Treffer pro Anfrage (API-seitige Begrenzung)
-- Andere Portale: Begrenzung über `max_treffer`-Parameter (Listenkürzung)
+- juris3 portals (REST API): max. 100 results per request (API-side limit)
+- Other portals: limited via the `max_treffer` parameter (list slicing)
 
-## Rechtlicher Hinweis
+## Legal Notice
 
-Die abgerufenen Entscheidungen sind öffentlich zugängliche Gerichtsentscheidungen.
-Die Nutzungsbedingungen der jeweiligen Portale sind zu beachten:
+The retrieved decisions are publicly available court rulings.
+The terms of use of each portal apply:
 
-- **Juris-Portale** (Landesrecht-Portale): Nicht-gewerbliche Nutzung allgemein erlaubt.
-- **Niedersachsen (Wolters Kluwer)**: Nicht-kommerzielles Text and Data Mining erlaubt
-  nach § 44b UrhG. Kommerzielles TDM ausdrücklich ausgeschlossen.
-- **Alle anderen Portale**: Öffentliche Gerichtsentscheidungen, Nutzung für eigene
-  juristische Recherche.
+- **juris portals** (state law portals): non-commercial use generally permitted.
+- **Lower Saxony (Wolters Kluwer)**: non-commercial text and data mining permitted
+  under § 44b UrhG. Commercial TDM explicitly excluded.
+- **All other portals**: public court decisions, use for personal legal research.
 
-Dieser Agent ist für eigene juristische Recherche konzipiert.
-Für kommerzielle Weiterverwendung der Ergebnisse bitte die jeweiligen
-Nutzungsbedingungen prüfen.
+This agent is intended for personal legal research.
+For commercial use of the results, please review the respective terms of service.
