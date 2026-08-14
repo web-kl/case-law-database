@@ -59,9 +59,16 @@ if __name__ == "__main__":
     module = importlib.import_module(module_name)
     fn = getattr(module, func_name)
 
+    # Stdout auf stderr umleiten, damit print()-Aufrufe in Scrapern
+    # (z.B. Debug-/Fehlermeldungen) die JSON-Ausgabe nicht korrumpieren.
+    _real_stdout = sys.stdout
+    sys.stdout = sys.stderr
     try:
         result = fn(**params)
-        print(json.dumps(result, ensure_ascii=False))
     except Exception as e:
         print(f"Scraper-Fehler: {e}", file=sys.stderr)
         sys.exit(1)
+    finally:
+        sys.stdout = _real_stdout
+
+    print(json.dumps(result, ensure_ascii=False))
