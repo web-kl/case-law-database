@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:www.justiz.de)"
+      "WebFetch(domain:www.justiz.de)",
+      "PowerShell(cd \"C:\\\\Users\\\\kl_we\\\\Downloads\\\\rechtsprechung_agent\"; Start-Process python -ArgumentList \"server.py\" -NoNewWindow -PassThru; Start-Sleep 4; $r = Invoke-WebRequest -Uri 'http://localhost:8765/search' -Method POST -ContentType 'application/json; charset=utf-8' -Body '{\"suchbegriff\":\"Kündigung\",\"portale\":[\"Bund\",\"NRW\"]}' -UseBasicParsing; $r.Content)",
+      "Bash(curl -s http://localhost:8765/status?job=1582deb9-80ae-459e-826b-7d30da987a79)",
+      "PowerShell(Stop-Process *)",
+      "Bash(curl -s http://localhost:8765/status?job=f779908b-5e1b-4460-99c0-1a42f076ed6c)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('Portale:', [\\(p['name'],p['status'],p['treffer']\\) for p in d['portale']]\\); print\\('Fehler:', d['fehler']\\); print\\('Treffer gesamt:', len\\(d['treffer']\\)\\)\")"
     ]
   }
 }

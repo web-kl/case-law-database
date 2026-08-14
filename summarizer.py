@@ -1,14 +1,13 @@
 """
 Zusammenfassung der Suchergebnisse mit Claude.
 Nutzt die Anthropic API mit claude-sonnet-4-6.
+Alle Funktionen sind synchron – kein asyncio, kein Event-Loop-Problem.
 """
 
 import os
 import anthropic
 
 
-# API-Key aus Umgebungsvariable (niemals hardcoden!)
-# Setzen Sie: export ANTHROPIC_API_KEY="sk-ant-..."
 _client = None
 
 
@@ -25,7 +24,7 @@ def _get_client() -> anthropic.Anthropic:
     return _client
 
 
-async def erstelle_zusammenfassung(
+def erstelle_zusammenfassung(
     suchbegriff: str,
     treffer: list[dict],
     anweisung: str | None = None,
@@ -34,15 +33,14 @@ async def erstelle_zusammenfassung(
     Übergibt alle Suchergebnisse an Claude und erhält eine
     strukturierte juristische Zusammenfassung zurück.
     """
-
-    # Treffer als Text aufbereiten
     treffer_text = _formatiere_treffer(treffer)
-
-    # Statistik für den Prompt
     portale = sorted({t.get("portal", "?") for t in treffer})
     anzahl = len(treffer)
 
-    anweisung_block = f"\n**Besondere Auswertungsanweisung:** {anweisung}\nRichte die gesamte Analyse und Zusammenfassung an dieser Anweisung aus.\n" if anweisung else ""
+    anweisung_block = (
+        f"\n**Besondere Auswertungsanweisung:** {anweisung}\n"
+        "Richte die gesamte Analyse und Zusammenfassung an dieser Anweisung aus.\n"
+    ) if anweisung else ""
 
     prompt = f"""Du bist ein juristischer Assistent. Analysiere die folgenden Suchergebnisse aus deutschen Landesrechtsdatenbanken und erstelle eine strukturierte juristische Zusammenfassung.
 
@@ -77,26 +75,17 @@ Kurzer Hinweis auf Vollständigkeit und Empfehlung zur Vertiefung.
 
 Bleibe dabei strikt bei den übergebenen Informationen. Erfinde keine Aktenzeichen, Daten oder Inhalte."""
 
-    # Synchroner API-Aufruf (Anthropic SDK ist nicht async-nativ)
-    import asyncio
-    loop = asyncio.get_running_loop()
-    antwort = await loop.run_in_executor(None, _api_aufruf, prompt)
-
-    return antwort
+    return _api_aufruf(prompt)
 
 
 def _api_aufruf(prompt: str) -> str:
     """Führt den synchronen Claude API-Aufruf aus."""
     client = _get_client()
-
     nachricht = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=8000,
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
+        messages=[{"role": "user", "content": prompt}],
     )
-
     return nachricht.content[0].text
 
 
@@ -143,7 +132,7 @@ def _api_aufruf_blog(prompt: str) -> dict:
     return {"titel": "", "blogbeitrag": "", "meta": ""}
 
 
-async def erstelle_blogbeitrag(
+def erstelle_blogbeitrag(
     treffer: list[dict],
     zusammenfassung: str,
 ) -> dict:
@@ -160,11 +149,10 @@ GEFUNDENE ENTSCHEIDUNGEN:
 
 Schreibe für juristische Laien. Erkläre, was die Entscheidungen für den Alltag der Leser bedeuten."""
 
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, _api_aufruf_blog, prompt)
+    return _api_aufruf_blog(prompt)
 
 
-async def beantworte_folgefrage(
+def beantworte_folgefrage(
     treffer: list[dict],
     zusammenfassung: str,
     frage: str,
@@ -193,9 +181,7 @@ AKTUELLE FRAGE:
 
 Beantworte die Frage präzise und basierend auf den vorliegenden Ergebnissen. Zitiere relevante Entscheidungen mit Gericht und Aktenzeichen, wo sinnvoll. Wenn die Frage nicht aus den Ergebnissen beantwortet werden kann, weise klar darauf hin."""
 
-    import asyncio
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, _api_aufruf, prompt)
+    return _api_aufruf(prompt)
 
 
 def _formatiere_treffer(treffer: list[dict]) -> str:
@@ -208,7 +194,7 @@ def _formatiere_treffer(treffer: list[dict]) -> str:
         gericht  = t.get("gericht", "")
         datum    = t.get("datum", "")
         az       = t.get("aktenzeichen", "")
-        vorschau = t.get("vorschau", "")[:400]  # Auf 400 Zeichen begrenzen
+        vorschau = t.get("vorschau", "")[:400]
         url      = t.get("url", "")
 
         teil = f"**Treffer {i}** [{portal}]\n"

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from playwright.async_api import async_playwright
+from playwright.sync_api import sync_playwright
 
 API_URL = "https://www.landesrecht-bw.de/jportal/wsrest/recherche3/search"
 
@@ -21,13 +21,13 @@ _JS_FETCH = """
     }
 """
 
-async def suche_bw(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None, gericht=None):
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        ctx = await browser.new_context(
+def suche_bw(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None, gericht=None):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        ctx = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
         )
-        page = await ctx.new_page()
+        page = ctx.new_page()
         try:
             csrf = None
             def _grab(r):
@@ -36,9 +36,9 @@ async def suche_bw(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None, g
                     csrf = r.headers["x-csrf-token"]
             page.on("request", _grab)
 
-            await page.goto("https://www.landesrecht-bw.de/bsbw/search",
-                            wait_until="domcontentloaded", timeout=30000)
-            await page.wait_for_timeout(3000)
+            page.goto("https://www.landesrecht-bw.de/bsbw/search",
+                      wait_until="domcontentloaded", timeout=30000)
+            page.wait_for_timeout(3000)
 
             searches = [{"id": "Text", "value": suchbegriff or ""}]
             if datum_von or datum_bis:
@@ -68,7 +68,7 @@ async def suche_bw(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None, g
                 "r3ID": r3id,
             }
 
-            data = await page.evaluate(_JS_FETCH, [API_URL, payload, csrf])
+            data = page.evaluate(_JS_FETCH, [API_URL, payload, csrf])
             if "error" in data:
                 raise RuntimeError(f"BW API {data['error']}: {data.get('body', '')[:200]}")
 
@@ -93,4 +93,4 @@ async def suche_bw(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None, g
         except Exception as e:
             raise RuntimeError(f"BW-Suche fehlgeschlagen: {e}")
         finally:
-            await browser.close()
+            browser.close()

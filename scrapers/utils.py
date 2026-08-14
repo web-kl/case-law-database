@@ -15,10 +15,11 @@ def parse_titel(titel):
     return meta
 
 
-async def suche_juris3(page, portal_id, api_base, suchbegriff, max_treffer, datum_von, datum_bis):
+def suche_juris3(page, portal_id, api_base, suchbegriff, max_treffer, datum_von, datum_bis):
     """
     Generische Suchfunktion für juris3-Portale (landesrecht-*.de).
     Ruft die REST-API auf, nachdem ein CSRF-Token von der Suchseite geholt wurde.
+    Synchrone Version – kein asyncio, kein Event-Loop-Problem auf Windows.
     """
     _JS_FETCH = """
         async ([url, payload, csrf]) => {
@@ -46,12 +47,12 @@ async def suche_juris3(page, portal_id, api_base, suchbegriff, max_treffer, datu
     page.on("request", _grab)
 
     search_url = f"{api_base}/{portal_id}/search"
-    await page.goto(search_url, wait_until="networkidle", timeout=60000)
-    await page.wait_for_timeout(3000)
+    page.goto(search_url, wait_until="networkidle", timeout=60000)
+    page.wait_for_timeout(3000)
 
     # Fallback: CSRF-Token aus localStorage lesen (z.B. Hamburg)
     if not csrf:
-        csrf = await page.evaluate("""() => {
+        csrf = page.evaluate("""() => {
             try {
                 var raw = localStorage.getItem('r3Tab_gcData');
                 if (raw) return JSON.parse(raw).token || null;
@@ -88,7 +89,7 @@ async def suche_juris3(page, portal_id, api_base, suchbegriff, max_treffer, datu
     }
 
     api_url = f"{api_base}/jportal/wsrest/recherche3/search"
-    data = await page.evaluate(_JS_FETCH, [api_url, payload, csrf])
+    data = page.evaluate(_JS_FETCH, [api_url, payload, csrf])
     if "error" in data:
         raise RuntimeError(f"API {data['error']}: {data.get('body', '')[:200]}")
 

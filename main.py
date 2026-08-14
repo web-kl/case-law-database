@@ -2,13 +2,14 @@
 Rechtsprechungs-Agent
 Durchsucht deutsche Gerichtsdatenbanken (Bund + alle Bundeslaender) und erstellt
 eine juristische Zusammenfassung mit Claude.
+Alle Scraper und die Claude-Zusammenfassung sind synchron – kein asyncio.
 """
 
 import argparse
-import asyncio
 import io
 import re
 import sys
+import time
 from datetime import datetime
 
 # Windows-Konsole auf UTF-8 umstellen
@@ -58,54 +59,38 @@ PORTALE = [
     {"name": "Thueringen",            "funktion": suche_thueringen},
 ]
 
-# Maximale Treffer pro Portal (verhindert Überlastung)
 MAX_TREFFER_PRO_PORTAL = 100
 
-# Gerichtstyp-Mapping: Eingabe (uppercase) → Liste aller passenden Vollnamen.
-# Allgemeine Eingaben (z.B. "SG", "VG") erfassen alle Instanzen der Gerichtsbarkeit.
-# Spezifische Eingaben (z.B. "LSG", "OVG") erfassen nur eine Instanz.
 GERICHTSTYP_MAP: dict[str, list[str]] = {
-    # Sozialgerichtsbarkeit
     "SG":     ["sozialgericht", "landessozialgericht", "bundessozialgericht"],
     "LSG":    ["landessozialgericht"],
     "BSG":    ["bundessozialgericht"],
-
-    # Verwaltungsgerichtsbarkeit
     "VG":     ["verwaltungsgericht", "oberverwaltungsgericht",
                 "bundesverwaltungsgericht", "verwaltungsgerichtshof"],
     "OVG":    ["oberverwaltungsgericht"],
     "VGH":    ["verwaltungsgerichtshof"],
     "BVERWG": ["bundesverwaltungsgericht"],
-
-    # Finanzgerichtsbarkeit
     "FG":     ["finanzgericht", "bundesfinanzhof"],
     "BFH":    ["bundesfinanzhof"],
-
-    # Arbeitsgerichtsbarkeit
     "ARBG":   ["arbeitsgericht", "landesarbeitsgericht", "bundesarbeitsgericht"],
     "LAG":    ["landesarbeitsgericht"],
     "BAG":    ["bundesarbeitsgericht"],
-
-    # Ordentliche Gerichtsbarkeit
     "AG":     ["amtsgericht", "landgericht", "oberlandesgericht", "bundesgerichtshof"],
     "LG":     ["landgericht"],
     "OLG":    ["oberlandesgericht"],
     "BGH":    ["bundesgerichtshof"],
     "AMTSG":  ["amtsgericht"],
-
-    # Verfassungsgerichtsbarkeit
     "VERFG":  ["verfassungsgericht", "verfassungsgerichtshof",
                 "staatsgerichtshof", "bundesverfassungsgericht"],
     "BVERFG": ["bundesverfassungsgericht"],
 }
 
-# Pause zwischen Portalen in Sekunden (höfliches Crawling)
 PAUSE_SEKUNDEN = 2.0
 
 
 # ── Haupt-Agent ───────────────────────────────────────────────────────────────
 
-async def agent(
+def agent(
     suchbegriff: str,
     nur_portale: list[str] | None = None,
     datum_von: str | None = None,
@@ -114,10 +99,10 @@ async def agent(
     anweisung: str | None = None,
     max_treffer: int = MAX_TREFFER_PRO_PORTAL,
     max_treffer_gesamt: int | None = None,
-    on_progress=None,  # callable(portal_name, status, treffer_count)
+    on_progress=None,
 ) -> dict:
     """
-    Durchsucht alle konfigurierten Portale.
+    Durchsucht alle konfigurierten Portale (synchron).
     Gibt dict zurück: {treffer: [...], zusammenfassung: str, fehler: [...]}
     """
 
@@ -140,7 +125,6 @@ async def agent(
     alle_treffer: list[dict] = []
     fehler: list[dict] = []
 
-    # Gerichtstyp-Filter vorbereiten (einmalig, nicht pro Portal)
     gt_upper = gerichtstyp.strip().upper() if gerichtstyp else None
     gt_name_patterns = []
     if gt_upper:
@@ -152,10 +136,8 @@ async def agent(
     def _gt_match(t: dict) -> bool:
         felder = [t.get("gericht") or "", t.get("aktenzeichen") or "", t.get("titel") or ""]
         felder_upper = [f.upper() for f in felder]
-        # Abkürzung als Substring (SG trifft auch LSG, BSG; VG trifft OVG, VGH)
         if any(gt_upper in f for f in felder_upper):
             return True
-        # Vollnamen mit Wortgrenze (Sozialgericht, Landessozialgericht, …)
         return any(pat.search(f) for pat in gt_name_patterns for f in felder)
 
     for portal in portale:
@@ -163,7 +145,7 @@ async def agent(
         if on_progress:
             on_progress(portal["name"], "running", None)
         try:
-            treffer = await portal["funktion"](
+            treffer = portal["funktion"](
                 suchbegriff=suchbegriff,
                 max_treffer=max_treffer,
                 datum_von=datum_von,
@@ -187,7 +169,7 @@ async def agent(
             print(f"  Gesamtlimit von {max_treffer_gesamt} Treffern erreicht, Suche gestoppt.")
             break
 
-        await asyncio.sleep(PAUSE_SEKUNDEN)
+        time.sleep(PAUSE_SEKUNDEN)
 
     print(f"\n  Gesamt: {len(alle_treffer)} Treffer aus {len(portale)} Portalen.")
 
@@ -201,7 +183,7 @@ async def agent(
     print("\n  Erstelle Zusammenfassung mit Claude ...")
     if on_progress:
         on_progress("__summary__", "running", None)
-    zusammenfassung = await erstelle_zusammenfassung(
+    zusammenfassung = erstelle_zusammenfassung(
         suchbegriff=suchbegriff,
         treffer=alle_treffer,
         anweisung=anweisung,
@@ -223,11 +205,11 @@ if __name__ == "__main__":
         prog="main.py",
         description="Rechtsprechungs-Agent — durchsucht deutsche Gerichtsdatenbanken",
     )
-    parser.add_argument("suchbegriff", nargs="*", help="Suchbegriff, auch mehrere Woerter (interaktiv wenn weggelassen)")
-    parser.add_argument("--von",      metavar="TT.MM.JJJJ", help="Datum von (z.B. 01.01.2024)")
-    parser.add_argument("--bis",      metavar="TT.MM.JJJJ", help="Datum bis (z.B. 31.12.2024)")
+    parser.add_argument("suchbegriff", nargs="*", help="Suchbegriff")
+    parser.add_argument("--von",      metavar="TT.MM.JJJJ", help="Datum von")
+    parser.add_argument("--bis",      metavar="TT.MM.JJJJ", help="Datum bis")
     parser.add_argument("--portale",  metavar="NAME", nargs="+",
-                        help="Nur diese Portale durchsuchen (z.B. --portale Bund Bayern NRW)")
+                        help="Nur diese Portale durchsuchen")
     parser.add_argument("--treffer",  metavar="N", type=int, default=MAX_TREFFER_PRO_PORTAL,
                         help=f"Max. Treffer pro Portal (Standard: {MAX_TREFFER_PRO_PORTAL})")
     args = parser.parse_args()
@@ -242,21 +224,19 @@ if __name__ == "__main__":
             print("Kein Suchbegriff eingegeben. Abbruch.")
             sys.exit(1)
 
-    ergebnis = asyncio.run(agent(
+    ergebnis = agent(
         suchbegriff=begriff,
         nur_portale=args.portale,
         datum_von=args.von,
         datum_bis=args.bis,
         max_treffer=args.treffer,
-    ))
+    )
 
-    # Ausgabe in Konsole
     print("\n" + "="*60)
     print("  ZUSAMMENFASSUNG")
     print("="*60)
     print(ergebnis["zusammenfassung"])
 
-    # Ausgabe in Datei
     zeitstempel = datetime.now().strftime("%Y%m%d_%H%M%S")
     dateiname = f"output/zusammenfassung_{zeitstempel}.txt"
     with open(dateiname, "w", encoding="utf-8") as f:

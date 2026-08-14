@@ -2,13 +2,12 @@
 Scraper für Bund (Rechtsprechung im Internet)
 """
 from urllib.parse import quote
-from playwright.async_api import async_playwright
+from playwright.sync_api import sync_playwright
 
 _BASE = "https://www.rechtsprechung-im-internet.de/jportal/portal/page/bsjrsprod.psml"
 
-async def suche_bund(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None, gericht=None):
+def suche_bund(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None, gericht=None):
     if suchbegriff:
-        # Schnellsuche mit Textbegriff
         params = (
             "eventSubmit_doSearch=suchen"
             "&action=portlets.jw.MainAction"
@@ -24,7 +23,6 @@ async def suche_bund(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None,
         if datum_bis:
             params += f"&dateTo={quote(datum_bis)}"
     else:
-        # Expertensuche: nur Datumsfilter, kein Textbegriff
         params = (
             "eventSubmit_doSearch=suchen"
             "&action=portlets.jw.MainAction"
@@ -40,14 +38,14 @@ async def suche_bund(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None,
 
     url = f"{_BASE}?{params}"
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
         try:
-            await page.goto(url, wait_until="domcontentloaded", timeout=60000)
-            await page.wait_for_timeout(4000)
+            page.goto(url, wait_until="domcontentloaded", timeout=60000)
+            page.wait_for_timeout(4000)
 
-            link_data = await page.evaluate("""() => {
+            link_data = page.evaluate("""() => {
                 return Array.from(document.querySelectorAll('a'))
                     .filter(a => a.innerText.includes('|') && a.innerText.length > 10
                                  && !['Kurztext','Langtext'].includes(a.innerText.trim()))
@@ -101,4 +99,4 @@ async def suche_bund(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None,
         except Exception as e:
             raise RuntimeError(f"Bund-Suche fehlgeschlagen: {e}")
         finally:
-            await browser.close()
+            browser.close()

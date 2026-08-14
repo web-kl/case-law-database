@@ -2,10 +2,9 @@
 Scraper für Niedersachsen (NI-VORIS / Wolters Kluwer)
 URL: https://voris.wolterskluwer-online.de/search
 """
-
 import re
 from urllib.parse import quote
-from playwright.async_api import async_playwright
+from playwright.sync_api import sync_playwright
 
 BASE_URL = "https://voris.wolterskluwer-online.de/search"
 RSPR_FILTER = "publicationform-ats-filter!ATS_Rechtsprechung"
@@ -35,7 +34,7 @@ def _parse_titel(titel: str) -> dict:
     return meta
 
 
-async def suche_niedersachsen(
+def suche_niedersachsen(
     suchbegriff: str,
     max_treffer: int = 5,
     datum_von: str | None = None,
@@ -54,21 +53,21 @@ async def suche_niedersachsen(
         params += f"&end_date_range={quote(iso_bis)}"
     url = f"{BASE_URL}?{params}"
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
         try:
-            await page.goto(url, wait_until="networkidle", timeout=30000)
-            await page.wait_for_timeout(2000)
+            page.goto(url, wait_until="networkidle", timeout=30000)
+            page.wait_for_timeout(2000)
 
-            links = await page.query_selector_all("h3 a")
+            links = page.query_selector_all("h3 a")
             treffer = []
             for link in links[:max_treffer]:
                 try:
-                    titel = (await link.inner_text()).strip()
+                    titel = link.inner_text().strip()
                     if not titel:
                         continue
-                    href = await link.get_attribute("href") or ""
+                    href = link.get_attribute("href") or ""
                     if href and not href.startswith("http"):
                         href = "https://voris.wolterskluwer-online.de" + href
                     meta = _parse_titel(titel)
@@ -86,4 +85,4 @@ async def suche_niedersachsen(
         except Exception as e:
             raise RuntimeError(f"Niedersachsen-Suche fehlgeschlagen: {e}") from e
         finally:
-            await browser.close()
+            browser.close()

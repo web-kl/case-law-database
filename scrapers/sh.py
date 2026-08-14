@@ -1,5 +1,6 @@
+import re
 from datetime import datetime, timezone
-from playwright.async_api import async_playwright
+from playwright.sync_api import sync_playwright
 
 _BASE = "https://www.gesetze-rechtsprechung.sh.juris.de"
 _PORTAL_ID = "bssh"
@@ -23,7 +24,6 @@ _JS_FETCH = """
 """
 
 _JS_FIND_CSRF = """() => {
-    // 1. Alle localStorage-Keys durchsuchen
     for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i);
         try {
@@ -33,7 +33,6 @@ _JS_FIND_CSRF = """() => {
             if (val && val['x-csrf-token']) return val['x-csrf-token'];
         } catch(e) {}
     }
-    // 2. sessionStorage
     for (var i = 0; i < sessionStorage.length; i++) {
         var key = sessionStorage.key(i);
         try {
@@ -42,30 +41,27 @@ _JS_FIND_CSRF = """() => {
             if (val && val.csrfToken) return val.csrfToken;
         } catch(e) {}
     }
-    // 3. Meta-Tag
     var meta = document.querySelector('meta[name="csrf-token"]');
     if (meta) return meta.getAttribute('content');
     return null;
 }"""
 
-async def suche_sh(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None, gericht=None):
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        ctx = await browser.new_context(
+def suche_sh(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None, gericht=None):
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        ctx = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         )
-        page = await ctx.new_page()
+        page = ctx.new_page()
         try:
             csrf = None
 
-            # CSRF aus Request-Headers abfangen
             def _grab_request(r):
                 nonlocal csrf
                 v = r.headers.get("x-csrf-token")
                 if v:
                     csrf = v
 
-            # CSRF aus Response-Headers abfangen
             def _grab_response(r):
                 nonlocal csrf
                 v = r.headers.get("x-csrf-token")
@@ -75,19 +71,15 @@ async def suche_sh(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None, g
             page.on("request", _grab_request)
             page.on("response", _grab_response)
 
-            # Seite laden und länger warten damit JS vollständig initialisiert
-            await page.goto(f"{_BASE}/{_PORTAL_ID}/search",
-                            wait_until="networkidle", timeout=60000)
-            await page.wait_for_timeout(5000)
+            page.goto(f"{_BASE}/{_PORTAL_ID}/search",
+                      wait_until="networkidle", timeout=60000)
+            page.wait_for_timeout(5000)
 
-            # Fallback: Storage und Meta-Tags durchsuchen
             if not csrf:
-                csrf = await page.evaluate(_JS_FIND_CSRF)
+                csrf = page.evaluate(_JS_FIND_CSRF)
 
-            # Letzter Fallback: Suche im Seitenquelltext
             if not csrf:
-                content = await page.content()
-                import re
+                content = page.content()
                 m = re.search(r'"token"\s*:\s*"([^"]{10,})"', content)
                 if m:
                     csrf = m.group(1)
@@ -124,7 +116,7 @@ async def suche_sh(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None, g
             }
 
             api_url = f"{_BASE}/jportal/wsrest/recherche3/search"
-            data = await page.evaluate(_JS_FETCH, [api_url, payload, csrf])
+            data = page.evaluate(_JS_FETCH, [api_url, payload, csrf])
             if "error" in data:
                 raise RuntimeError(f"API {data['error']}: {data.get('body', '')[:300]}")
 
@@ -150,4 +142,4 @@ async def suche_sh(suchbegriff, max_treffer=5, datum_von=None, datum_bis=None, g
         except Exception as e:
             raise RuntimeError(f"SH-Suche fehlgeschlagen: {e}")
         finally:
-            await browser.close()
+            browser.close()
