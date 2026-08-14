@@ -28,6 +28,17 @@ def _load_dotenv():
 
 _load_dotenv()
 
+# Windows: Konsolentitel setzen – MUSS vor Playwright stehen!
+# Playwright's Node.js ruft GetConsoleTitleW() auf. Gibt die Funktion 0
+# zurück (leerer Titel oder keine Konsole), setzt libuv process_title=NULL
+# und es folgt "Assertion failed: process_title, win/util.c:412".
+if sys.platform == "win32":
+    import ctypes
+    try:
+        ctypes.windll.kernel32.SetConsoleTitleW("Rechtsprechungs-Agent")
+    except Exception:
+        pass
+
 # Windows UTF-8
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
