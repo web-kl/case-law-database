@@ -3,6 +3,16 @@
 Automatically searches **17 German court databases** (federal + all 16 states)
 and generates structured legal summaries and blog posts using Claude (Anthropic).
 
+## Why Web Scraping?
+
+**German court databases do not provide public APIs.** Each state operates its own
+portal with different technology stacks, search forms, and authentication mechanisms.
+This agent uses [Playwright](https://playwright.dev/) to automate a headless Chromium
+browser, filling out search forms and extracting results — just like a human user would,
+but fully automated. The only exceptions are the juris3-based state portals, which
+expose an internal REST API that can be called after loading the page to obtain a
+CSRF token.
+
 ## Features
 
 - 🔍 **17 portals** – federal courts and all 16 German states
@@ -17,25 +27,25 @@ and generates structured legal summaries and blog posts using Claude (Anthropic)
 
 ## Covered Databases
 
-| State / Portal | URL | Type |
+| State / Portal | URL | Access method |
 |---|---|---|
-| **Federal (Bund)** | rechtsprechung-im-internet.de | Form (Playwright) |
-| **Baden-Württemberg** | landesrecht-bw.de | juris3 REST API |
-| **Bavaria** | gesetze-bayern.de | Form (Playwright) |
-| **Berlin** | gesetze.berlin.de | juris3 REST API |
-| **Brandenburg** | gerichtsentscheidungen.brandenburg.de | Form (Playwright) |
-| **Bremen** | OLG, OVG, VG, LAG (4 portals) | Form (Playwright) |
-| **Hamburg** | landesrecht-hamburg.de | juris3 REST API |
-| **Hesse** | lareda.hessenrecht.hessen.de | juris3 REST API |
-| **Mecklenburg-Vorpommern** | landesrecht-mv.de | juris3 REST API |
-| **Lower Saxony** | voris.wolterskluwer-online.de | URL params (Playwright) |
-| **North Rhine-Westphalia** | nrwesuche.justiz.nrw.de | Form (Playwright) |
-| **Rhineland-Palatinate** | landesrecht.rlp.de | juris3 REST API |
-| **Saarland** | recht.saarland.de | juris3 REST API |
-| **Saxony** | esamosplus + OVG portal (2 portals) | Form (Playwright) |
-| **Saxony-Anhalt** | landesrecht.sachsen-anhalt.de | juris3 REST API |
-| **Schleswig-Holstein** | gesetze-rechtsprechung.sh.juris.de | juris3 REST API |
-| **Thuringia** | landesrecht.thueringen.de | juris3 REST API |
+| **Federal (Bund)** | rechtsprechung-im-internet.de | Form scraping (Playwright) |
+| **Baden-Württemberg** | landesrecht-bw.de | juris3 internal REST API |
+| **Bavaria** | gesetze-bayern.de | Form scraping (Playwright) |
+| **Berlin** | gesetze.berlin.de | juris3 internal REST API |
+| **Brandenburg** | gerichtsentscheidungen.brandenburg.de | Form scraping (Playwright) |
+| **Bremen** | OLG, OVG, VG, LAG (4 portals) | Form scraping (Playwright) |
+| **Hamburg** | landesrecht-hamburg.de | juris3 internal REST API |
+| **Hesse** | lareda.hessenrecht.hessen.de | juris3 internal REST API |
+| **Mecklenburg-Vorpommern** | landesrecht-mv.de | juris3 internal REST API |
+| **Lower Saxony** | voris.wolterskluwer-online.de | URL parameter scraping (Playwright) |
+| **North Rhine-Westphalia** | nrwesuche.justiz.nrw.de | Form scraping (Playwright) |
+| **Rhineland-Palatinate** | landesrecht.rlp.de | juris3 internal REST API |
+| **Saarland** | recht.saarland.de | juris3 internal REST API |
+| **Saxony** | esamosplus + OVG portal (2 portals) | Form scraping (Playwright) |
+| **Saxony-Anhalt** | landesrecht.sachsen-anhalt.de | juris3 internal REST API |
+| **Schleswig-Holstein** | gesetze-rechtsprechung.sh.juris.de | juris3 internal REST API |
+| **Thuringia** | landesrecht.thueringen.de | juris3 internal REST API |
 
 ## Requirements
 
@@ -214,12 +224,12 @@ PORTALE = [
 
 ## Technical Notes
 
-### Why subprocesses?
+### Why subprocesses for Playwright?
 
-Playwright's Node.js driver uses libuv, which calls `GetConsoleTitleW()` on startup.
-On Windows, this call fails when the process is launched from a background thread
-rather than the main thread — resulting in `Assertion failed: process_title` in
-`src/win/util.c`.
+Playwright's Node.js driver uses libuv, which calls `GetConsoleTitleW()` on Windows
+at startup. When launched from a background thread (as used by Python's
+`ThreadingHTTPServer`), this call can fail — resulting in
+`Assertion failed: process_title` in `src/win/util.c`.
 
 The solution: each scraper is launched as a separate Python subprocess via
 `run_scraper.py`. Every subprocess gets its own clean process context in which
@@ -227,8 +237,8 @@ Playwright starts without issues.
 
 ### API limits
 
-- juris3 portals (REST API): max. 100 results per request (API-side limit)
-- Other portals: limited via the `max_treffer` parameter (list slicing)
+- juris3 portals (internal REST API): max. 100 results per request (server-side limit)
+- Other portals: limited via the `max_treffer` parameter (list slicing after scraping)
 
 ## Legal Notice
 
